@@ -1,0 +1,18 @@
+<head>
+<script type="text/javascript" src="svg-path-parser-browser.js"></script>
+</head>
+<body>
+<script type="text/javascript">
+var letterA = 'M 208 74 Q 208 50 254 46 Q 272 46 272 35 Q 272 34 270 22 Q 267 8 264 4 T 251 0 Q 249 0 239 0 T 205 1 T 141 2 Q 70 2 50 0 H 42 Q 35 7 35 11 Q 37 38 48 46 H 62 Q 132 49 164 96 Q 170 102 345 401 T 523 704 Q 530 716 547 716 H 555 H 572 Q 578 707 578 706 L 606 383 Q 634 60 636 57 Q 641 46 701 46 Q 726 46 726 36 Q 726 34 723 22 Q 720 7 718 4 T 704 0 Q 701 0 690 0 T 651 1 T 578 2 Q 484 2 455 0 H 443 Q 437 6 437 9 T 439 27 Q 443 40 445 43 L 449 46 H 469 Q 523 49 533 63 L 521 213 H 283 L 249 155 Q 208 86 208 74 Z M 516 260 Q 516 271 504 416 T 490 562 L 463 519 Q 447 492 400 412 L 310 260 L 413 259 Q 516 259 516 260 Z'
+var d='M3,7 5-6 L1,7 1e2-.4 m-10,10 l10,0  \
+      V27 89 H23           v10 h10             \
+      C33,43 38,47 43,47   c0,5 5,10 10,10     \
+      S63,67 63,67         s-10,10 10,10       \
+      Q50,50 73,57         q20,-5 0,-10        \
+      T70,40               t0,-15              \
+      A5,5 45 1,0 40,20    a5,5 20 0,1 -10-10  Z';
+console.log(parsePathString(d));
+console.log(parsePathString("M 100 100 Q 100 210 210 150 z"));
+console.log(parsePathString(letterA));
+</script>
+</body>
