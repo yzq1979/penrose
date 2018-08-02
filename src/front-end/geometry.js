@@ -3,8 +3,13 @@ var CANVAS_HEIGHT   = 700
 var DEBUG           = true
 // var DEBUG           = false
 
+
+
+//////////////////// MAIN
+////////////////////////////////////////
+
 function main() {
-    console.log("started penrose geometry test module")
+    // console.log("started penrose geometry test module")
     var s = Snap("#svgdiv");
     $("#svgdiv").css("width",  CANVAS_WIDTH);
     $("#svgdiv").css("height", CANVAS_HEIGHT);
@@ -21,226 +26,34 @@ function main() {
     // //console.log(l1pts)
     //shortestAbsDistance(l1, l2, s)
 
+
+    // randmly create two polygons
     var poly1 = randomPolygon(300);
     var poly2 = randomPolygon(110);
+    // render to screen
     drawPolygon(poly1, s)
     drawPolygon(poly2, s)
+    // check which points are contained in the other polygon
     checkAllPointContainment(poly1, poly2, s)
     checkAllPointContainment(poly2, poly1, s)
 
+    // find and draw abs min, min, and max distances
     absMinDist(poly1, poly2, s)
     minDist(poly1, poly2, s)
+    maxDist(poly1, poly2, s)
 }
 
-function genPoint([xmin, xmax], [ymin, ymax]) {
-    x = Math.floor(Math.random() * (xmax - xmin)) + xmin;
-    y = Math.floor(Math.random() * (ymax - ymin)) + ymin;
-    return {x, y}
-}
-function genLine(xRange, yRange) {
-    pt1 = genPoint(xRange, yRange)
-    pt2 = genPoint(xRange, yRange)
-    return {pt1, pt2}
-}
+//////////////////// POLYGON DISTANCE FUNCTIONS
+////////////////////////////////////////
 
 /****************************************
-* List of points to list of coordinate objects
-*****************************************/
-function toCoords(list) {
-    var ptList = []
-    for(var i = 0; i < list.length; i+=2){
-        var pts = {}
-        pts.x = list[i]
-        pts.y = list[i+1]
-        ptList.push(pts)
-    }
-    return ptList
-}
-
-
-/****************************************
-* Render intersection point
-*****************************************/
-function renderIntersect(s, l1, l2) {
-    renderPolylines(s, [l1, l2])
-    p = intersect(l1, l2)
-    if(p) {
-        if (p === true) {
-            console.log("The lines are colinear!")
-        } else {
-            console.log("Intersection found at: ", p)
-            renderPoint(s, p)
-        }
-    }
-    else {
-        console.log("The lines do not intersect!")
-    }
-}
-
-/****************************************
-* https://www.paulirish.com/2009/random-hex-color-code-snippets/
-*****************************************/
-function randomColor() {
-    return '#' + Math.floor(Math.random()*16777215).toString(16);
-}
-
-/****************************************
-*
-*****************************************/
-function renderPolylines(s, ptss) {
-    var res = []
-    ptss.forEach(function(pts) {
-        res += renderPolyline(s, pts)
-    })
-    return res
-}
-
-/****************************************
-*
-*****************************************/
-function renderPoint(s, pt) {
-    [x, y] = pt
-    var renderedPoint = s.circle(x, y, 5)
-    renderedPoint.attr({ fill: "red" })
-    return renderedPoint
-}
-
-/****************************************
-*
-*****************************************/
-function renderPolyline(s, pts) {
-    if(DEBUG) console.log("rendering", pts);
-    [x1, y1, x2, y2] = pts
-    var renderedLine = s.polyline(pts)
-    var color = randomColor()
-    renderedLine.attr({
-        "stroke-width": 5,
-        stroke: color
-    })
-    renderedLine.drag()
-    var endPoint1 = s.circle(x1, y1, 5)
-    var endPoint2 = s.circle(x2, y2, 5)
-    var group = s.g(renderedLine, endPoint1, endPoint2)
-    group.attr({ fill: color })
-    return group
-}
-
-/****************************************
-* Renders a polygon where the pts is a list of points, not coord objects
-*****************************************/
-function renderPolygonPointList(s, pts) {
-    if(DEBUG) console.log("rendering polygon", pts);
-    var polygon = s.polygon(pts)
-    var color = randomColor()
-    polygon.attr({
-        "stroke-width": 5,
-        fill: color
-    })
-    polygon.drag()
-    return polygon
-}
-
-// line intercept math by Paul Bourke http://paulbourke.net/geometry/pointlineplane/
-// Determine the intersection point of two line segments
-// Return FALSE if the lines don't intersect
-function intersect([x1, y1, x2, y2], [x3, y3, x4, y4]) {
-
-  // Check if none of the lines are of length 0
-	if ((x1 === x2 && y1 === y2) || (x3 === x4 && y3 === y4)) {
-		return false
-	}
-
-	denominator = ((y4 - y3) * (x2 - x1) - (x4 - x3) * (y2 - y1))
-
-  // Lines are parallel
-	if (denominator === 0) {
-
-        // lines are colinear
-        numeratorA  = ((x4 - x3) * (y1 - y3) - (y4 - y3) * (x1 - x3))
-        numeratorB  = ((x2 - x1) * (y1 - y3) - (y2 - y1) * (x1 - x3))
-        if(numeratorA == 0 && numeratorB == 0)
-            return true
-
-		return false
-	}
-
-	let ua = ((x4 - x3) * (y1 - y3) - (y4 - y3) * (x1 - x3)) / denominator
-	let ub = ((x2 - x1) * (y1 - y3) - (y2 - y1) * (x1 - x3)) / denominator
-
-  // is the ion along the segments
-	if (ua < 0 || ua > 1 || ub < 0 || ub > 1) {
-		return false
-	}
-
-  // Return a object with the x and y coordinates of the intersection
-	let x = x1 + ua * (x2 - x1)
-	let y = y1 + ua * (y2 - y1)
-
-	return [x, y]
-}
-
-/****************************************
-* Based on https://github.com/substack/point-in-polygon/
-*****************************************/
-function inPolygon(point, vs) {
-    // ray-casting algorithm based on
-    // http://www.ecse.rpi.edu/Homepages/wrf/Research/Short_Notes/pnpoly.html
-
-    var x = point.x;
-    var y = point.y;
-
-    var inside = false;
-    for (var i = 0, j = vs.length - 1; i < vs.length; j = i++) {
-        var xi = vs[i].x, yi = vs[i].y;
-        var xj = vs[j].x, yj = vs[j].y;
-
-        var intersect = ((yi > y) != (yj > y))
-            && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
-        if (intersect) inside = !inside;
-    }
-
-    return inside;
-};
-//https://stackoverflow.com/questions/849211/shortest-distance-between-a-point-and-a-line-segment
-function sqr(x) { return x * x }
-function dist2(v, w) { return sqr(v.x - w.x) + sqr(v.y - w.y) }
-
-
-/****************************************
-* finds dist of point to line, returns line in coord form and distance
-*****************************************/
-function distToSegment(pt, l, s) {
-    [v, w] = [l.pt1, l.pt2]
-    var l2 = dist2(v, w);
-    if (l2 == 0) return dist2(pt, v);
-    var t = ((pt.x - v.x) * (w.x - v.x) + (pt.y - v.y) * (w.y - v.y)) / l2;
-    t = Math.max(0, Math.min(1, t));
-    var pt1 = { x: pt.x, y: pt.y }
-    var pt2 = { x: v.x + t * (w.x - v.x), y: v.y + t * (w.y - v.y) }
-    var line = { pt1, pt2 }
-    dist = Math.sqrt(dist2(pt, { x: v.x + t * (w.x - v.x),
-        y: v.y + t * (w.y - v.y) }))
-
-
-    // var sign = inPolygon(pt, polygon)
-    // if(sign){
-    //   dist = dist*(-1)
-    //   console.log(sign + " is it negative? dist is: " + dist)
-    // }
-    return {line, dist}
-}
-
-
-// function distToSegment(p, v, w, s) {
-//     return Math.sqrt(distToSegmentSquared(p, v, w, s));
-// }
-
-/****************************************
-* absolute minimum distance between two polygons
+* passed in p1, p2, returns nothing
+* draws absolute minimum distance between two polygons
 *****************************************/
 function absMinDist(p1, p2, s){
-  min = {}
-  min.dist = 100000
+  if(DEBUG) console.log("...Calculating abs min distance (in blue)")
+  absMin = {}
+  absMin.dist = 100000
   for(var i = 0; i < p1.length-1; i++){
     for(var j = 0; j < p2.length-1; j++){
       var a = {}
@@ -250,40 +63,27 @@ function absMinDist(p1, p2, s){
       b.pt1 = p2[j]
       b.pt2 = p2[j+1]
 
-      temp = shortestAbsDistance(a, b, p1, p2, s)
-      if (temp.dist < min.dist){
-        min.dist = temp.dist
-        min.line = temp.line
+      temp = shortestAbsDistance(a, b, p1, p2, s)  // for every point against every edge
+                                                  // find shortest distance, NOT DIRECTIONAL
+                                                  // NO SIGN
+      if (temp.dist < absMin.dist){
+        absMin.dist = temp.dist
+        absMin.line = temp.line
       }
     }
   }
-  // for(var i = 0; i < p2.length-1; i++){
-  //   for(var j = 0; j < p1.length-1; j++){
-  //     var a = {}
-  //     var b = {}
-  //     a.pt1 = p2[i]
-  //     a.pt2 = p2[i+1]
-  //     b.pt1 = p1[j]
-  //     b.pt2 = p1[j+1]
-  //
-  //     temp = shortestAbsDistance(a, b, p1, p2, s)
-  //     if (temp.dist < min.dist){
-  //       min.dist = temp.dist
-  //       min.line = temp.line
-  //     }
-  //   }
-  // }
-  //var m = min.line
-  console.log(min)
-  if(min.dist != 0){
-    var l = s.polyline(min.line.pt1.x, min.line.pt1.y, min.line.pt2.x, min.line.pt2.y)
+
+  // draw absolute minimum line or point of intersection
+  if(DEBUG) console.log("Abs min distance is " + absMin.dist)
+  if(absMin.dist != 0){
+    var l = s.polyline(absMin.line.pt1.x, absMin.line.pt1.y, absMin.line.pt2.x, absMin.line.pt2.y)
     l.attr({
       stroke: "blue",
   		strokeWidth: 2
     })
   }
   else{
-    var c = s.circle(min.line.pt1.x, min.line.pt1.y, 5);
+    var c = s.circle(absMin.line.pt1.x, absMin.line.pt1.y, 5);
     c.attr({
       fill: "blue"
     })
@@ -291,9 +91,55 @@ function absMinDist(p1, p2, s){
 }
 
 /****************************************
+* most positive/maximum distance between polygons
+*****************************************/
+function maxDist(p1, p2, s){
+      if(DEBUG) console.log("...Calculating max distance (in yellow)")
+      max = {}
+      max.dist = Number.MIN_SAFE_INTEGER
+      for(var i = 0; i < p1.length-1; i++){
+        for(var j = 0; j < p2.length-1; j++){
+          var a = {}
+          var b = {}
+          a.pt1 = p1[i]
+          a.pt2 = p1[i+1]
+          b.pt1 = p2[j]
+          b.pt2 = p2[j+1]
+
+          temp = shortestDirectionalDistance(a, b, p1, p2, s) // for every point
+                                                    // against every edge find
+                                                    // shortest distance, DIRECTIONAL
+                                                    // SIGNED
+          if (temp.dist > max.dist){
+            max.dist = temp.dist
+            max.line = temp.line
+          }
+        }
+      }
+
+      // draw maximum line
+      if(DEBUG) console.log("Max distance is " + max.dist)
+      if(max.dist != 0){
+        var l = s.polyline(max.line.pt1.x, max.line.pt1.y, max.line.pt2.x, max.line.pt2.y)
+        l.attr({
+          stroke: "yellow",
+      		strokeWidth: 1
+        })
+      }
+      else{
+        var c = s.circle(max.line.pt1.x, max.line.pt1.y, 5);
+        c.attr({
+          fill: "yellow"
+        })
+      }
+  }
+
+
+/****************************************
 * most negative/minimum distance between polygons
 *****************************************/
 function minDist(p1, p2, s){
+    if(DEBUG) console.log("...Calculating min distance (in purple)")
     min = {}
     min.dist = Number.MAX_SAFE_INTEGER
     for(var i = 0; i < p1.length-1; i++){
@@ -305,32 +151,36 @@ function minDist(p1, p2, s){
         b.pt1 = p2[j]
         b.pt2 = p2[j+1]
 
-        temp = shortestDistance(a, b, p1, p2, s)
+        temp = shortestDirectionalDistance(a, b, p1, p2, s)  // for every point
+                                                  // against every edge find
+                                                  // shortest distance, DIRECTIONAL
+                                                  // SIGNED
         if (temp.dist < min.dist){
           min.dist = temp.dist
           min.line = temp.line
         }
       }
     }
-    //var m = min.line
-    console.log(min)
+
+      // draw minimum line
+    if(DEBUG) console.log("Min distance is " + min.dist)
     if(min.dist != 0){
       var l = s.polyline(min.line.pt1.x, min.line.pt1.y, min.line.pt2.x, min.line.pt2.y)
       l.attr({
-        stroke: "grey",
+        stroke: "purple",
     		strokeWidth: 1
       })
     }
     else{
       var c = s.circle(min.line.pt1.x, min.line.pt1.y, 5);
       c.attr({
-        fill: "grey"
+        fill: "purple"
       })
     }
 }
 
 /****************************************
-* Finds shortest distance, returns
+* Finds shortest absolute distance, (accounts for interseciton means dist == 0)
 *****************************************/
 function shortestAbsDistance(l1, l2, poly1, poly2, s){
     var ret = {}
@@ -355,59 +205,127 @@ function shortestAbsDistance(l1, l2, poly1, poly2, s){
         }
     }
     var line = [ret.line.pt1.x, ret.line.pt1.y, ret.line.pt2.x, ret.line.pt2.y]
-    // var shortestLine = s.polyline(line)
-    // shortestLine.attr({
-    //     "stroke-width": 2,
-    //     stroke: "red"
-    // })
     // console.log("SHORTEST DISTANCE " + dists[index].dist);
-
     return ret
 }
 
+
 /****************************************
-* Finds shortest distance, returns
+* Finds shortest signed distance, does not account for intersection/boundary distance
 *****************************************/
-function shortestDistance(l1, l2, poly1, poly2, s){
+function shortestDirectionalDistance(l1, l2, poly1, poly2, s){
     dists = []
 
     dists[0] = distToSegment(l1.pt1, l2, s)
     var sign = inPolygon(l1.pt1, poly2)
-    if(sign){
-      dists[0].dist *= (-1)
-      console.log(dists[0].dist + " is inside poly2, is now negative");
-    }
+    if(sign){ dists[0].dist *= (-1) }
 
     dists[1] = distToSegment(l1.pt2, l2, s)
     var sign = inPolygon(l1.pt2, poly2)
     if(sign){ dists[1].dist *= (-1)}
 
     dists[2] = distToSegment(l2.pt1, l1, s)
-    var sign = inPolygon(l2.pt1, poly1)
+    //var apt = 
+    var sign = inPolygon(l2.pt1, poly1) // get sign from intersection point on A
     if(sign){ dists[2].dist *= (-1)}
 
     dists[3] = distToSegment(l2.pt2, l1, s)
-    var sign = inPolygon(l2.pt2, poly1)
+    var sign = inPolygon(l2.pt2, poly1) // get sign from intersection point on A
     if(sign){ dists[3].dist *= (-1)}
 
     var minimum = Number.MAX_SAFE_INTEGER
     var index = -1
     for(var i = 0; i < 4; i++){
         if(Math.abs(dists[i].dist) < minimum){
-            minimum = dists[i].dist
+            minimum = Math.abs(dists[i].dist)
             index = i
         }
     }
-    //console.log(dists[index])
-    // var l = dists[index].line
-    // var shortestLine = s.polyline(l.pt1.x, l.pt1.y, l.pt2.x, l.pt2.y)
-    // shortestLine.attr({
-    //     "stroke-width": 5,
-    //     stroke: "red"
-    // })
   //  if(DEBUG) console.log("SHORTEST DISTANCE " + dists[index].dist);
-
     return dists[index]
+}
+/****************************************
+* finds shortest dist of a single point to a line segment
+* returns object with line in coord form and distance
+*****************************************/
+function distToSegment(pt, l, s) {
+    [v, w] = [l.pt1, l.pt2]
+    var l2 = dist2(v, w);
+    if (l2 == 0) return dist2(pt, v);
+    var t = ((pt.x - v.x) * (w.x - v.x) + (pt.y - v.y) * (w.y - v.y)) / l2;
+    t = Math.max(0, Math.min(1, t));
+    var pt1 = { x: pt.x, y: pt.y }
+    var pt2 = { x: v.x + t * (w.x - v.x), y: v.y + t * (w.y - v.y) }
+    var line = { pt1, pt2 }
+    dist = Math.sqrt(dist2(pt, { x: v.x + t * (w.x - v.x),
+        y: v.y + t * (w.y - v.y) }))
+    return {line, dist}
+}
+
+/****************************************
+* Based on https://github.com/substack/point-in-polygon/
+    // ray-casting algorithm based on
+    // http://www.ecse.rpi.edu/Homepages/wrf/Research/Short_Notes/pnpoly.html
+
+    Returns true if point is contained in polygon vs
+*****************************************/
+function inPolygon(point, vs) {
+    var x = point.x;
+    var y = point.y;
+    var inside = false;
+    for (var i = 0, j = vs.length - 1; i < vs.length; j = i++) {
+        var xi = vs[i].x, yi = vs[i].y;
+        var xj = vs[j].x, yj = vs[j].y;
+
+        var intersect = ((yi > y) != (yj > y))
+            && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+        if (intersect) inside = !inside;
+    }
+    return inside;
+};
+
+
+/****************************************
+* Helper distance funcitons from
+* https://stackoverflow.com/questions/849211/shortest-distance-between-a-point-and-a-line-segment
+*****************************************/
+function sqr(x) {
+  return x * x
+}
+function dist2(v, w) {
+  return sqr(v.x - w.x) + sqr(v.y - w.y)
+}
+
+/*****************************************
+* line intercept math by Paul Bourke http://paulbourke.net/geometry/pointlineplane/
+* Determine the intersection point of two line segments
+* Return FALSE if the lines don't intersect
+*****************************************/
+function intersect([x1, y1, x2, y2], [x3, y3, x4, y4]) {
+  // Check if none of the lines are of length 0
+	if ((x1 === x2 && y1 === y2) || (x3 === x4 && y3 === y4)) {
+		return false
+	}
+	denominator = ((y4 - y3) * (x2 - x1) - (x4 - x3) * (y2 - y1))
+  // Lines are parallel
+	if (denominator === 0) {
+        // lines are colinear
+        numeratorA  = ((x4 - x3) * (y1 - y3) - (y4 - y3) * (x1 - x3))
+        numeratorB  = ((x2 - x1) * (y1 - y3) - (y2 - y1) * (x1 - x3))
+        if(numeratorA == 0 && numeratorB == 0)
+            return true
+		return false
+	}
+	let ua = ((x4 - x3) * (y1 - y3) - (y4 - y3) * (x1 - x3)) / denominator
+	let ub = ((x2 - x1) * (y1 - y3) - (y2 - y1) * (x1 - x3)) / denominator
+  // is the ion along the segments
+	if (ua < 0 || ua > 1 || ub < 0 || ub > 1) {
+		return false
+	}
+  // Return a object with the x and y coordinates of the intersection
+	let x = x1 + ua * (x2 - x1)
+	let y = y1 + ua * (y2 - y1)
+	return [x, y]
 }
 
 
@@ -423,7 +341,6 @@ function toList(coords) {
     return lst
 }
 
-
 /****************************************
 * Given an array of Coordinate objects, draw a polygon
 *****************************************/
@@ -435,15 +352,9 @@ function drawPolygon(polygon, s){
     pts[count+1] = polygon[i].y
     count += 2
   }
-  // color = ["red", "blue", "green", "yellow"]
-  // color[Math.floor(Math.random() * 4)]
   var randColor = Math.floor(Math.random() * 999)
   var colorStr = "#" + randColor
-  // if(DEBUG){
-  //   console.log(randColor)
-  //   console.log("Array of points to send to snap polyline function: ")
-  //   console.log(pts)
-  // }
+
   var p = s.polyline(pts)
   p.attr({
     fill: colorStr,
@@ -453,15 +364,6 @@ function drawPolygon(polygon, s){
   })
   p.drag()
 }
-// /*************************************
-// * Checks that one point pt is inside a poylgon p
-// *************************************/
-// function containedPoint(pt, p){
-//   var ray =
-//   for(var i = 0; i < p.length; i++){
-//
-//   }
-// }
 
 
 /*************************************
@@ -487,9 +389,8 @@ function checkAllPointContainment(p1, p2, s){
   return inside;
 }
 
-
 /*************************************
-* Creates random polygon points
+* Creates a random polygon with random num vertices, center, concave/convex
 **************************************/
 function randomPolygon(rmaxnew){
   var xCenter = Math.floor(Math.random() * 300) + 200;
@@ -497,12 +398,9 @@ function randomPolygon(rmaxnew){
   var rmax = rmaxnew, rmin =40;
   var pointmax = 16, pointmin = 3;
   var numPoints = Math.floor(Math.random() * (pointmax-pointmin)) + pointmin;
-
   if(DEBUG){
-    console.log("Center: " + xCenter + " " + yCenter);
-    console.log("numPoints is " + numPoints);
+    console.log("New Polygon: \n numPoints is " + numPoints + "\n Center: " + xCenter + " " + yCenter)
   }
-
   poly = []
   for(var i = 0; i < numPoints; i++){
     var pt = {}
@@ -557,8 +455,123 @@ function drawHullPointsFromSVG(inputSVG, s){
   return newpoints
 }
 
+/////////////////////////////////////////////////////////////////
+////////////////// MISC HELPER FUNCTIONS AND POLY LINE FUNCTIONS
+/////////////////////////////////////////////////////////////////
 
 
+
+////// POLY Lines
+//////////////////////////////////////////
+
+/****************************************
+* Render intersection point
+*****************************************/
+function renderIntersect(s, l1, l2) {
+    renderPolylines(s, [l1, l2])
+    p = intersect(l1, l2)
+    if(p) {
+        if (p === true) {
+            console.log("The lines are colinear!")
+        } else {
+            console.log("Intersection found at: ", p)
+            renderPoint(s, p)
+        }
+    }
+    else {
+        console.log("The lines do not intersect!")
+    }
+}
+/****************************************
+* Render lines in pt form
+*****************************************/
+function renderPolylines(s, ptss) {
+    var res = []
+    ptss.forEach(function(pts) {
+        res += renderPolyline(s, pts)
+    })
+    return res
+}
+
+/****************************************
+* renders a poly line where line is in pt1, pt2 coord form
+*****************************************/
+function renderPolyline(s, line) {
+    if(DEBUG) console.log("rendering", pts);
+    var x1 = line.pt1.x, y1 = line.pt1.y
+    var x2 = line.pt2.x, y1 = line.pt2.y
+    var renderedLine = s.polyline([x1, y1, x2, y2])
+    var color = randomColor()
+    renderedLine.attr({
+        "stroke-width": 5,
+        stroke: color
+    })
+    renderedLine.drag()
+    var endPoint1 = s.circle(x1, y1, 5)
+    var endPoint2 = s.circle(x2, y2, 5)
+    var group = s.g(renderedLine, endPoint1, endPoint2)
+    group.attr({ fill: color })
+    return group
+}
+
+/****************************************
+* Renders a polygon where the line is a list of points, not coord objects
+*****************************************/
+function renderPolygonPointList(s, line) {
+    if(DEBUG) console.log("rendering polygon", line);
+    var polygon = s.polygon(line)
+    var color = randomColor()
+    polygon.attr({
+        "stroke-width": 5,
+        fill: color
+    })
+    polygon.drag()
+    return polygon
+}
+
+
+///// SMALL HELPER FUNCITONS
+//////////////////////////////////////////////////
+
+function genPoint([xmin, xmax], [ymin, ymax]) {
+    x = Math.floor(Math.random() * (xmax - xmin)) + xmin;
+    y = Math.floor(Math.random() * (ymax - ymin)) + ymin;
+    return {x, y}
+}
+function genLine(xRange, yRange) {
+    pt1 = genPoint(xRange, yRange)
+    pt2 = genPoint(xRange, yRange)
+    return {pt1, pt2}
+}
+/****************************************
+* renders a point in list form
+*****************************************/
+function renderPoint(s, pt) {
+    [x, y] = pt
+    var renderedPoint = s.circle(x, y, 5)
+    renderedPoint.attr({ fill: "red" })
+    return renderedPoint
+}
+/****************************************
+* List of points to list of coordinate objects
+*****************************************/
+function toCoords(list) {
+    var ptList = []
+    for(var i = 0; i < list.length; i+=2){
+        var pts = {}
+        pts.x = list[i]
+        pts.y = list[i+1]
+        ptList.push(pts)
+    }
+    return ptList
+}
+
+/****************************************
+* https://www.paulirish.com/2009/random-hex-color-code-snippets/
+*****************************************/
+function randomColor() {
+    return '#' + Math.floor(Math.random()*16777215).toString(16);
+}
 
 // Main function invokation
 $(document).ready(function () {
