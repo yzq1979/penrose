@@ -68,9 +68,50 @@ function drawPolygon(polygon, s){
   var p = s.polyline(pts)
   p.attr({
     fill: colorStr,
+    "fill-opacity": 0.5,
 		stroke: "black",
 		strokeWidth: 2
   })
+}
+
+/*************************************
+* Checks that one point pt is inside a poylgon p
+*************************************/
+function containedPoint(pt, p){
+  var ray =
+  for(var i = 0; i < p.length; i++){
+
+  }
+}
+
+
+/*************************************
+* Checks whether points in p1 are inside p2 (if visualizepoints
+* flag, then shows green for contained points, red for noncontained)
+**************************************/
+function checkAllPointContainment(p1, p2, s){
+  var inside = false;
+  var visualizePoints = true
+
+  for(var i = 0; i < p1.length; i++){
+    if (containedPoint(p1[i], p2)){
+      inside = true;
+      if visualizePoints{
+        var point = s.circle(p1[i][0], p1[i][0], 5)
+        point.attr({
+          fill: green
+        })
+      }
+    }
+    else if visualizePoints{
+      var point = s.circle(p1[i][0], p1[i][0], 5)
+      point.attr({
+        fill: red
+      })
+    }
+  }
+
+  return inside;
 }
 
 
@@ -80,8 +121,8 @@ function drawPolygon(polygon, s){
 function randomPolygon(){
   var xCenter = Math.floor(Math.random() * 300) + 100;
   var yCenter = Math.floor(Math.random() * 300) + 100;
-  var rmax = 100, rmin =20;
-  var pointmax = 10, pointmin = 3;
+  var rmax = 300, rmin =40;
+  var pointmax = 16, pointmin = 3;
   var numPoints = Math.floor(Math.random() * (pointmax-pointmin)) + pointmin;
 
   console.log("Center: " + xCenter + " " + yCenter);
