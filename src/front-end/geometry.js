@@ -5,6 +5,27 @@ var DEBUG           = true
 
 
 
+
+/**** Types Used
+
+-- Lines are objects with two point objects for the endpoints
+Line {
+  point pt1,
+  point pt2
+}
+
+-- points are objects with an x and y value
+point {
+  int x,
+  int y
+}
+
+-- polygon is an array of points
+polygon a = [point]
+
+*** */
+
+
 //////////////////// MAIN
 ////////////////////////////////////////
 
@@ -14,59 +35,58 @@ function main() {
     $("#svgdiv").css("width",  CANVAS_WIDTH);
     $("#svgdiv").css("height", CANVAS_HEIGHT);
 
-    //testIntersect(s)
-    // var l1 = [ 10, 10, 100, 100 ]
-    // var l2 = [ 50, 150, 250, 50 ]
+    // using arrays of x, y endpoints, generate line type and save in l1
     var l1 = genLine([0, CANVAS_WIDTH], [0, CANVAS_HEIGHT])
     var l2 = genLine([0, CANVAS_WIDTH], [0, CANVAS_HEIGHT])
-    // var l2 = JSON.parse(JSON.stringify(l1))
-    // l2.pt1.y += 100
-    // l2.pt2.y += 100
-    // renderPolylines(s, [toList([l1.pt1, l1.pt2]), toList([l2.pt1, l2.pt2])])
-    // //console.log(l1pts)
-    //shortestAbsDistance(l1, l2, s)
-
 
     // randmly create two polygons
-    var poly1 = randomPolygon(300);
-    var poly2 = randomPolygon(110);
+    var poly1 = randomPolygon(s, "A");
+    var poly2 = randomPolygon(s, "B");
+
     // render to screen
     drawPolygon(poly1, s)
     drawPolygon(poly2, s)
+    console.log(poly1);
     // check which points are contained in the other polygon
     checkAllPointContainment(poly1, poly2, s)
     checkAllPointContainment(poly2, poly1, s)
 
     // find and draw abs min, min, and max distances
-    absMinDist(poly1, poly2, s)
-    minDist(poly1, poly2, s)
-    maxDist(poly1, poly2, s)
+    minUnsignedDist(poly1, poly2, s)
+    minSignedDist(poly1, poly2, s)
+    maxSignedDist(poly1, poly2, s)
+    maxUnsignedDist(poly1, poly2, s)
 }
 
 //////////////////// POLYGON DISTANCE FUNCTIONS
 ////////////////////////////////////////
 
-/****************************************
-* passed in p1, p2, returns nothing
-* draws absolute minimum distance between two polygons
-*****************************************/
-function absMinDist(p1, p2, s){
-  if(DEBUG) console.log("...Calculating abs min distance (in blue)")
-  absMin = {}
-  absMin.dist = 100000
-  for(var i = 0; i < p1.length-1; i++){
-    for(var j = 0; j < p2.length-1; j++){
-      var a = {}
-      var b = {}
-      a.pt1 = p1[i]
-      a.pt2 = p1[i+1]
-      b.pt1 = p2[j]
-      b.pt2 = p2[j+1]
 
-      temp = shortestAbsDistance(a, b, p1, p2, s)  // for every point against every edge
-                                                  // find shortest distance, NOT DIRECTIONAL
-                                                  // NO SIGN
-      if (temp.dist < absMin.dist){
+//         DONE
+/****************************************
+* Function: minimum unsigned distance between two polygons
+* Description: draws absolute minimum distance between two polygons
+* Input: poly1 and poly2 (polygons), the snap object for drawing
+* Return: nothing
+*****************************************/
+function minUnsignedDist(poly1, poly2, s){
+  if(DEBUG) console.log("...Calculating unsigned min distance (in blue)")
+  // as we iterate through the edges in the polygon, we compare each edge in A
+  // against every edge in B and save the shortest unsigned distance
+  absMin = {}
+  absMin.dist = Number.MAX_SAFE_INTEGER
+  for(var i = 0; i < poly1.length-1; i++){
+    var a = {}
+    a.pt1 = poly1[i] // save edge in line data type
+    a.pt2 = poly1[i+1]
+    for(var j = 0; j < poly2.length-1; j++){
+      var b = {}
+      b.pt1 = poly2[j] // save edge in line data type
+      b.pt2 = poly2[j+1]
+
+      temp = shortestUnsignedDistance(a, b, s)  // for every point against every edge
+                                                // find shortest distance, NOT SIGN
+      if (temp.dist < absMin.dist){  // Save the global minimum distance and line data type
         absMin.dist = temp.dist
         absMin.line = temp.line
       }
@@ -82,7 +102,7 @@ function absMinDist(p1, p2, s){
   		strokeWidth: 2
     })
   }
-  else{
+  else{ // if dist == 0 (ex: where edges on A and B intersect), draw point of intersection
     var c = s.circle(absMin.line.pt1.x, absMin.line.pt1.y, 5);
     c.attr({
       fill: "blue"
@@ -91,69 +111,143 @@ function absMinDist(p1, p2, s){
 }
 
 /****************************************
-* most positive/maximum distance between polygons
+* Funtion: maximum signed dsitance
+* Description: line between the point on poly1 that is farthest from the boundary
+*               of poly2 and the closest point on poly2's boundary
+* Input: two polygons poly1 and poly2, snap object s for drawing
+* Output: nothing
 *****************************************/
-function maxDist(p1, p2, s){
-      if(DEBUG) console.log("...Calculating max distance (in yellow)")
-      max = {}
-      max.dist = Number.MIN_SAFE_INTEGER
-      for(var i = 0; i < p1.length-1; i++){
-        for(var j = 0; j < p2.length-1; j++){
-          var a = {}
-          var b = {}
-          a.pt1 = p1[i]
-          a.pt2 = p1[i+1]
-          b.pt1 = p2[j]
-          b.pt2 = p2[j+1]
+function maxUnsignedDist(poly1, poly2, s){
+  if(DEBUG) console.log("...Calculating unsigned max distance (in pink)")
+  maxUnsignedLocal = {}
+  maxUnsignedLocal.dist = Number.MAX_SAFE_INTEGER
+  maxUnsignedAll = {}
+  maxUnsignedAll.dist = Number.MIN_SAFE_INTEGER
 
-          temp = shortestDirectionalDistance(a, b, p1, p2, s) // for every point
+  for(var i = 0; i < poly1.length-1; i++){
+    var a = {}
+    a.pt1 = poly1[i]
+    a.pt2 = poly1[i+1]
+    for(var j = 0; j < poly2.length-1; j++){
+      var b = {}
+      b.pt1 = poly2[j]
+      b.pt2 = poly2[j+1]
+
+      temp = shortestUnsignedDistance(a, b, s)  // for every point against every edge
+                                                // find shortest distance, NO SIGN
+      if (temp.dist < maxUnsignedLocal.dist){ // first find the max dist of poly1's
+                                 // edge a w.r.t. poly2
+        maxUnsignedLocal.dist = temp.dist
+        maxUnsignedLocal.line = temp.line
+      }
+    }
+    if (maxUnsignedLocal.dist > maxUnsignedAll.dist){ // then compare each edge on poly1's max
+                               // with each other
+      maxUnsignedAll.dist = maxUnsignedLocal.dist
+      maxUnsignedAll.line = maxUnsignedLocal.line
+    }
+  }
+
+
+  // draw absolute minimum line or point of intersection
+  if(DEBUG) console.log("Unsigned max distance is " + maxUnsignedAll.dist)
+  if(maxUnsignedAll.dist != 0){
+    var l = s.polyline(maxUnsignedAll.line.pt1.x, maxUnsignedAll.line.pt1.y, maxUnsignedAll.line.pt2.x, maxUnsignedAll.line.pt2.y)
+    l.attr({
+      stroke: "pink",
+  		strokeWidth: 2
+    })
+  }
+  else{
+    var c = s.circle(maxUnsignedAll.line.pt1.x, maxUnsignedAll.line.pt1.y, 5);
+    c.attr({
+      fill: "pink",
+      distanceType: "maxUnsignedDistance"
+    })
+  }
+}
+
+/****************************************
+* Funtion: maximum signed distance
+* Description: Draws the line between the point on poly1 whose distance to
+*               the closest boundary point on poly2 is the most positive.
+* Input: two polygons poly1 and poly2, snap object s for drawing
+* Output: nothing
+*****************************************/
+function maxSignedDist(poly2, poly1, s){
+      if(DEBUG) console.log("...Calculating max signed distance (in yellow)")
+      maxLocal = {}
+      maxLocal.dist = Number.MAX_SAFE_INTEGER
+      maxAll = {}
+      maxAll.dist = Number.MIN_SAFE_INTEGER
+
+      for(var i = 0; i < poly1.length-1; i++){
+        var a = {}
+        a.pt1 = poly1[i]
+        a.pt2 = poly1[i+1]
+        for(var j = 0; j < poly2.length-1; j++){
+          var b = {}
+          b.pt1 = poly2[j]
+          b.pt2 = poly2[j+1]
+
+          //temp = shortestSignedDistance(a, b, poly1, poly2, s) // for every point
                                                     // against every edge find
                                                     // shortest distance, DIRECTIONAL
                                                     // SIGNED
-          if (temp.dist > max.dist){
-            max.dist = temp.dist
-            max.line = temp.line
+
+          if (temp.dist < maxLocal.dist){ // first find the min dist of poly1's
+                                     // edge a w.r.t. poly2
+            maxLocal.dist = temp.dist
+            maxLocal.line = temp.line
           }
+        }
+        if (maxLocal.dist > maxAll.dist){ // then compare each edge on poly1's
+                                   // min with each other to find max of mins
+          maxAll.dist = maxLocal.dist
+          maxAll.line = maxLocal.line
         }
       }
 
       // draw maximum line
-      if(DEBUG) console.log("Max distance is " + max.dist)
-      if(max.dist != 0){
-        var l = s.polyline(max.line.pt1.x, max.line.pt1.y, max.line.pt2.x, max.line.pt2.y)
+      if(DEBUG) console.log("Max distance is " + maxAll.dist)
+      if(maxAll.dist != 0){
+        var l = s.polyline(maxAll.line.pt1.x, maxAll.line.pt1.y, maxAll.line.pt2.x, maxAll.line.pt2.y)
         l.attr({
           stroke: "yellow",
-      		strokeWidth: 1
+      		strokeWidth: 2
         })
       }
       else{
-        var c = s.circle(max.line.pt1.x, max.line.pt1.y, 5);
+        var c = s.circle(maxAll.line.pt1.x, maxAll.line.pt1.y, 5);
         c.attr({
           fill: "yellow"
         })
       }
   }
 
-
 /****************************************
-* most negative/minimum distance between polygons
+* Function: most negative/minimum distance between polygons
+* Description: Draws the line from the most negative distance from a point on
+*              poly1 to it’s closest point on poly2's boundary
+* Input: two polygons poly1 and poly2, snap object s for drawing
+* Output: nothing
 *****************************************/
-function minDist(p1, p2, s){
-    if(DEBUG) console.log("...Calculating min distance (in purple)")
+function minSignedDist(poly1, poly2, s){
+    if(DEBUG) console.log("...Calculating min signed distance (in purple)")
     min = {}
     min.dist = Number.MAX_SAFE_INTEGER
-    for(var i = 0; i < p1.length-1; i++){
-      for(var j = 0; j < p2.length-1; j++){
-        var a = {}
+    for(var i = 0; i < poly1.length-1; i++){
+      var a = {}
+      a.pt1 = poly1[i] // save edge in a linetype object
+      a.pt2 = poly1[i+1]
+      for(var j = 0; j < poly2.length-1; j++){
         var b = {}
-        a.pt1 = p1[i]
-        a.pt2 = p1[i+1]
-        b.pt1 = p2[j]
-        b.pt2 = p2[j+1]
+        b.pt1 = poly2[j] // save edge in a linetype object
+        b.pt2 = poly2[j+1]
 
-        temp = shortestDirectionalDistance(a, b, p1, p2, s)  // for every point
+        temp = shortestSignedDistance(a, b, poly1, poly2, s)  // for every point
                                                   // against every edge find
-                                                  // shortest distance, DIRECTIONAL
+                                                  // shortest distance
                                                   // SIGNED
         if (temp.dist < min.dist){
           min.dist = temp.dist
@@ -168,7 +262,7 @@ function minDist(p1, p2, s){
       var l = s.polyline(min.line.pt1.x, min.line.pt1.y, min.line.pt2.x, min.line.pt2.y)
       l.attr({
         stroke: "purple",
-    		strokeWidth: 1
+    		strokeWidth: 2
       })
     }
     else{
@@ -180,73 +274,131 @@ function minDist(p1, p2, s){
 }
 
 /****************************************
-* Finds shortest absolute distance, (accounts for interseciton means dist == 0)
+* Function: shortest unsgined distance between two edges
+* Description: By comparing all edge points against the opposite edge
+*              this function finds the shortest distance between edges and where
+*              it occurs
+* Input: two edges (one on poly1, and one on poly2) and the snap object
+* Output: An object which contains "dist" the distance
+*         betwen edges and "line" the linetype object of the line which is the
+*         shortest unsigned distance between edges
 *****************************************/
-function shortestAbsDistance(l1, l2, poly1, poly2, s){
+function shortestUnsignedDistance(e1, e2, s){
     var ret = {}
-    dists = []
-    var inter = intersect(toList([l1.pt1, l1.pt2]), toList([l2.pt1, l2.pt2]))
-    if(inter){ //T
-      var l1 = { pt1: { x:inter[0], y:inter[1] } }
-      ret = {line: l1, dist: 0}
+    dists = [] // this will be an array of objects that contain "dist" the distance
+               // betwen edges and "line" the line data type of the shortest
+               // unsigned dist
+
+    // check if intersection happens
+    var inter = intersect(toList([e1.pt1, e1.pt2]), toList([e2.pt1, e2.pt2]))
+    if(inter){ // if so, save distance 0 and the points where there is an intersection
+      var e1 = { pt1: { x:inter[0], y:inter[1] }, pt2: { x:inter[0], y:inter[1] }  }
+      ret = {line: e1, dist: 0}
       return ret
     }
-    else{
-      dists[0] = distToSegment(l1.pt1, l2, s)
-      dists[1] = distToSegment(l1.pt2, l2, s)
-      dists[2] = distToSegment(l2.pt1, l1, s)
-      dists[3] = distToSegment(l2.pt2, l1, s)
+    else{ // otherwise, compare each point on one edge against the opposite edge
+      dists[0] = distToSegment(e1.pt1, e2, s)
+      dists[1] = distToSegment(e1.pt2, e2, s)
+      dists[2] = distToSegment(e2.pt1, e1, s)
+      dists[3] = distToSegment(e2.pt2, e1, s)
       var minimum = Number.MAX_SAFE_INTEGER
       for(var i = 0; i < 4; i++){
           if(dists[i].dist < minimum){
-              minimum = dists[i].dist
+              minimum = dists[i].dist //save the minimum of these dist values
               ret = dists[i]
           }
         }
     }
-    var line = [ret.line.pt1.x, ret.line.pt1.y, ret.line.pt2.x, ret.line.pt2.y]
-    // console.log("SHORTEST DISTANCE " + dists[index].dist);
+    // return the minimum distance and line
     return ret
+    /*
+    ret {
+     float dist,
+     linetype line
+    }
+    */
 }
 
 
 /****************************************
-* Finds shortest signed distance, does not account for intersection/boundary distance
+* Function: shortest SIGNED distance between two edges
+* Description: By comparing all edge points against the opposite edge
+*              this function finds the shortest distance between edges and where
+*              it occurs, taking into account poly1's sign w.r.t poly2
+* Input: two edges (one on poly1, and one on poly2) and the snap object
+* Output: An object which contains "dist" the distance
+*         betwen edges and "line" the linetype object of the line which is the
+*         shortest SIGNED distance between edges of poly1 w.r.t. poly2
 *****************************************/
-function shortestDirectionalDistance(l1, l2, poly1, poly2, s){
+function shortestSignedDistance(l1, l2, poly1, poly2, s){
     dists = []
 
     dists[0] = distToSegment(l1.pt1, l2, s)
-    var sign = inPolygon(l1.pt1, poly2)
-    if(sign){ dists[0].dist *= (-1) }
+    var aSign = inPolygon(dists[0].line.pt2, poly1) //check sign based on if A's point is inside B
+    if(aSign ){ dists[0].dist *= (-1)}
 
     dists[1] = distToSegment(l1.pt2, l2, s)
-    var sign = inPolygon(l1.pt2, poly2)
-    if(sign){ dists[1].dist *= (-1)}
+    var aSign = inPolygon(dists[1].line.pt2, poly1) //check sign based on if A's point is inside B
+    if(aSign ){ dists[1].dist *= (-1)}
 
     dists[2] = distToSegment(l2.pt1, l1, s)
-    //var apt = 
-    var sign = inPolygon(l2.pt1, poly1) // get sign from intersection point on A
-    if(sign){ dists[2].dist *= (-1)}
+    var aSign = inPolygon(dists[2].line.pt2, poly1) //check sign based on if A's point is inside B
+    if(aSign ){ dists[2].dist *= (-1)}
 
     dists[3] = distToSegment(l2.pt2, l1, s)
-    var sign = inPolygon(l2.pt2, poly1) // get sign from intersection point on A
-    if(sign){ dists[3].dist *= (-1)}
+    var aSign = inPolygon(dists[3].line.pt2, poly1) //check sign based on if A's point is inside B
+    if(aSign ){ dists[3].dist *= (-1)}
+
 
     var minimum = Number.MAX_SAFE_INTEGER
     var index = -1
     for(var i = 0; i < 4; i++){
-        if(Math.abs(dists[i].dist) < minimum){
-            minimum = Math.abs(dists[i].dist)
+        if(dists[i].dist < minimum){
+            minimum = dists[i].dist
             index = i
         }
     }
   //  if(DEBUG) console.log("SHORTEST DISTANCE " + dists[index].dist);
     return dists[index]
 }
+
+// /****************************************
+// * finds MAX unsigned dist between two lines
+// *****************************************/
+// function longestDistance(l1, l2, poly1, poly2, s){
+//   dists = []
+//
+//   dists[0] = distToSegment(l1.pt1, l2, s)
+//   dists[1] = distToSegment(l1.pt2, l2, s)
+//   dists[2] = distToSegment(l2.pt1, l1, s)
+//   dists[3] = distToSegment(l2.pt2, l1, s)
+//
+//   var max = Number.MIN_SAFE_INTEGER
+//   var index = -1
+//   for(var i = 0; i < 4; i++){
+//       if(Math.abs(dists[i].dist) > max){
+//           max = Math.abs(dists[i].dist)
+//           index = i
+//       }
+//   }
+// //  if(DEBUG) console.log("LONGEST DISTANCE " + dists[index].dist);
+//   return dists[index]
+// }
+
+/****************************************
+* Helper distance funcitons from
+* https://stackoverflow.com/questions/849211/shortest-distance-between-a-point-and-a-line-segment
+*****************************************/
+function sqr(x) {
+  return x * x
+}
+function dist2(v, w) {
+  return sqr(v.x - w.x) + sqr(v.y - w.y)
+}
 /****************************************
 * finds shortest dist of a single point to a line segment
 * returns object with line in coord form and distance
+/8 https://stackoverflow.com/questions/849211/shortest-distance-between-a-point-and-a-line-segment
 *****************************************/
 function distToSegment(pt, l, s) {
     [v, w] = [l.pt1, l.pt2]
@@ -284,17 +436,6 @@ function inPolygon(point, vs) {
     return inside;
 };
 
-
-/****************************************
-* Helper distance funcitons from
-* https://stackoverflow.com/questions/849211/shortest-distance-between-a-point-and-a-line-segment
-*****************************************/
-function sqr(x) {
-  return x * x
-}
-function dist2(v, w) {
-  return sqr(v.x - w.x) + sqr(v.y - w.y)
-}
 
 /*****************************************
 * line intercept math by Paul Bourke http://paulbourke.net/geometry/pointlineplane/
@@ -367,20 +508,20 @@ function drawPolygon(polygon, s){
 
 
 /*************************************
-* Checks whether points in p1 are inside p2 (if visualizepoints
+* Checks whether points in poly1 are inside poly2 (if visualizepoints
 * flag, then shows green for contained points, red for noncontained)
 **************************************/
-function checkAllPointContainment(p1, p2, s){
+function checkAllPointContainment(poly1, poly2, s){
   var inside = false;
   var visualizePoints = true
 
-  for(var i = 0; i < p1.length; i++){
-    if (inPolygon(p1[i], p2)){
+  for(var i = 0; i < poly1.length; i++){
+    if (inPolygon(poly1[i], poly2)){
       inside = true;
       fillColor = "#0C0"
     } else fillColor = "#F00"
     if (visualizePoints){
-      var point = s.circle(p1[i].x, p1[i].y, 4)
+      var point = s.circle(poly1[i].x, poly1[i].y, 4)
       point.attr({
         fill: fillColor
       })
@@ -392,10 +533,10 @@ function checkAllPointContainment(p1, p2, s){
 /*************************************
 * Creates a random polygon with random num vertices, center, concave/convex
 **************************************/
-function randomPolygon(rmaxnew){
+function randomPolygon(s, numPoly){
   var xCenter = Math.floor(Math.random() * 300) + 200;
   var yCenter = Math.floor(Math.random() * 300) + 200;
-  var rmax = rmaxnew, rmin =40;
+  var rmax = 100, rmin =40;
   var pointmax = 16, pointmin = 3;
   var numPoints = Math.floor(Math.random() * (pointmax-pointmin)) + pointmin;
   if(DEBUG){
@@ -414,6 +555,9 @@ function randomPolygon(rmaxnew){
   end.x = poly[0].x
   end.y = poly[0].y
   poly.push(end)
+
+  var str = "Poly " + numPoly
+  var t1 = s.text(xCenter, yCenter, str);
 
   return poly
 }
