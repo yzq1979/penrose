@@ -1,7 +1,7 @@
 var CANVAS_WIDTH    = 800
 var CANVAS_HEIGHT   = 700
-var DEBUG           = true
-// var DEBUG           = false
+//var DEBUG           = true
+ var DEBUG           = false
 
 
 
@@ -46,16 +46,22 @@ function main() {
     // render to screen
     drawPolygon(poly1, s)
     drawPolygon(poly2, s)
-    console.log(poly1);
     // check which points are contained in the other polygon
     checkAllPointContainment(poly1, poly2, s)
     checkAllPointContainment(poly2, poly1, s)
 
     // find and draw abs min, min, and max distances
-    minUnsignedDist(poly1, poly2, s)
-    minSignedDist(poly1, poly2, s)
-    maxSignedDist(poly1, poly2, s)
-    maxUnsignedDist(poly1, poly2, s)
+    // minUnsignedDist(poly1, poly2, s)
+    // minUnsignedDist(poly1, poly2, s)
+
+    // minSignedDist(poly1, poly2, s)
+    // minSignedDist(poly2, poly1, s)
+
+    // maxSignedDist(poly1, poly2, s)
+    // maxSignedDist(poly2, poly1, s)
+
+   // maxUnsignedDist(poly1, poly2, s)
+   // maxUnsignedDist(poly2, poly1, s)
 }
 
 //////////////////// POLYGON DISTANCE FUNCTIONS
@@ -93,21 +99,7 @@ function minUnsignedDist(poly1, poly2, s){
     }
   }
 
-  // draw absolute minimum line or point of intersection
-  if(DEBUG) console.log("Abs min distance is " + absMin.dist)
-  if(absMin.dist != 0){
-    var l = s.polyline(absMin.line.pt1.x, absMin.line.pt1.y, absMin.line.pt2.x, absMin.line.pt2.y)
-    l.attr({
-      stroke: "blue",
-  		strokeWidth: 2
-    })
-  }
-  else{ // if dist == 0 (ex: where edges on A and B intersect), draw point of intersection
-    var c = s.circle(absMin.line.pt1.x, absMin.line.pt1.y, 5);
-    c.attr({
-      fill: "blue"
-    })
-  }
+  printLine("minUnsignedDist", absMin, "blue", s)
 }
 
 /****************************************
@@ -119,8 +111,8 @@ function minUnsignedDist(poly1, poly2, s){
 *****************************************/
 function maxUnsignedDist(poly1, poly2, s){
   if(DEBUG) console.log("...Calculating unsigned max distance (in pink)")
-  maxUnsignedLocal = {}
-  maxUnsignedLocal.dist = Number.MAX_SAFE_INTEGER
+  minUnsignedLocal = {}
+  minUnsignedLocal.dist = Number.MAX_SAFE_INTEGER
   maxUnsignedAll = {}
   maxUnsignedAll.dist = Number.MIN_SAFE_INTEGER
 
@@ -128,6 +120,7 @@ function maxUnsignedDist(poly1, poly2, s){
     var a = {}
     a.pt1 = poly1[i]
     a.pt2 = poly1[i+1]
+    minUnsignedLocal.dist = Number.MAX_SAFE_INTEGER
     for(var j = 0; j < poly2.length-1; j++){
       var b = {}
       b.pt1 = poly2[j]
@@ -135,36 +128,19 @@ function maxUnsignedDist(poly1, poly2, s){
 
       temp = shortestUnsignedDistance(a, b, s)  // for every point against every edge
                                                 // find shortest distance, NO SIGN
-      if (temp.dist < maxUnsignedLocal.dist){ // first find the max dist of poly1's
+      if (temp.dist < minUnsignedLocal.dist){ // first find the min dist of poly1's
                                  // edge a w.r.t. poly2
-        maxUnsignedLocal.dist = temp.dist
-        maxUnsignedLocal.line = temp.line
+        minUnsignedLocal.dist = temp.dist
+        minUnsignedLocal.line = temp.line
       }
     }
-    if (maxUnsignedLocal.dist > maxUnsignedAll.dist){ // then compare each edge on poly1's max
-                               // with each other
-      maxUnsignedAll.dist = maxUnsignedLocal.dist
-      maxUnsignedAll.line = maxUnsignedLocal.line
+    if (minUnsignedLocal.dist > maxUnsignedAll.dist){ // then compare each edge on poly1's
+                               // with each other to find the maximum value
+      maxUnsignedAll.dist = minUnsignedLocal.dist
+      maxUnsignedAll.line = minUnsignedLocal.line
     }
   }
-
-
-  // draw absolute minimum line or point of intersection
-  if(DEBUG) console.log("Unsigned max distance is " + maxUnsignedAll.dist)
-  if(maxUnsignedAll.dist != 0){
-    var l = s.polyline(maxUnsignedAll.line.pt1.x, maxUnsignedAll.line.pt1.y, maxUnsignedAll.line.pt2.x, maxUnsignedAll.line.pt2.y)
-    l.attr({
-      stroke: "pink",
-  		strokeWidth: 2
-    })
-  }
-  else{
-    var c = s.circle(maxUnsignedAll.line.pt1.x, maxUnsignedAll.line.pt1.y, 5);
-    c.attr({
-      fill: "pink",
-      distanceType: "maxUnsignedDistance"
-    })
-  }
+  printLine("maxUnsignedDistance", maxUnsignedAll, "pink", s)
 }
 
 /****************************************
@@ -174,10 +150,10 @@ function maxUnsignedDist(poly1, poly2, s){
 * Input: two polygons poly1 and poly2, snap object s for drawing
 * Output: nothing
 *****************************************/
-function maxSignedDist(poly2, poly1, s){
+function maxSignedDist(poly1, poly2, s){
       if(DEBUG) console.log("...Calculating max signed distance (in yellow)")
-      maxLocal = {}
-      maxLocal.dist = Number.MAX_SAFE_INTEGER
+      minLocal = {}
+      minLocal.dist = Number.MAX_SAFE_INTEGER
       maxAll = {}
       maxAll.dist = Number.MIN_SAFE_INTEGER
 
@@ -185,44 +161,32 @@ function maxSignedDist(poly2, poly1, s){
         var a = {}
         a.pt1 = poly1[i]
         a.pt2 = poly1[i+1]
+        minLocal.dist = Number.MAX_SAFE_INTEGER
         for(var j = 0; j < poly2.length-1; j++){
           var b = {}
           b.pt1 = poly2[j]
           b.pt2 = poly2[j+1]
 
-          //temp = shortestSignedDistance(a, b, poly1, poly2, s) // for every point
+          temp = shortestSignedDistance(a, b, poly1, poly2, s) // for every point
                                                     // against every edge find
                                                     // shortest distance, DIRECTIONAL
                                                     // SIGNED
 
-          if (temp.dist < maxLocal.dist){ // first find the min dist of poly1's
+          if (temp.dist < minLocal.dist){ // first find the min dist of poly1's
                                      // edge a w.r.t. poly2
-            maxLocal.dist = temp.dist
-            maxLocal.line = temp.line
+            minLocal.dist = temp.dist
+            minLocal.line = temp.line
           }
         }
-        if (maxLocal.dist > maxAll.dist){ // then compare each edge on poly1's
+        if (minLocal.dist > maxAll.dist){ // then compare each edge on poly1's
                                    // min with each other to find max of mins
-          maxAll.dist = maxLocal.dist
-          maxAll.line = maxLocal.line
+          maxAll.dist = minLocal.dist
+          maxAll.line = minLocal.line
         }
       }
 
-      // draw maximum line
-      if(DEBUG) console.log("Max distance is " + maxAll.dist)
-      if(maxAll.dist != 0){
-        var l = s.polyline(maxAll.line.pt1.x, maxAll.line.pt1.y, maxAll.line.pt2.x, maxAll.line.pt2.y)
-        l.attr({
-          stroke: "yellow",
-      		strokeWidth: 2
-        })
-      }
-      else{
-        var c = s.circle(maxAll.line.pt1.x, maxAll.line.pt1.y, 5);
-        c.attr({
-          fill: "yellow"
-        })
-      }
+      printLine("maxSignedDist", maxAll, "yellow", s)
+
   }
 
 /****************************************
@@ -256,21 +220,7 @@ function minSignedDist(poly1, poly2, s){
       }
     }
 
-      // draw minimum line
-    if(DEBUG) console.log("Min distance is " + min.dist)
-    if(min.dist != 0){
-      var l = s.polyline(min.line.pt1.x, min.line.pt1.y, min.line.pt2.x, min.line.pt2.y)
-      l.attr({
-        stroke: "purple",
-    		strokeWidth: 2
-      })
-    }
-    else{
-      var c = s.circle(min.line.pt1.x, min.line.pt1.y, 5);
-      c.attr({
-        fill: "purple"
-      })
-    }
+    printLine("minSignedDistance", min, "purple", s)
 }
 
 /****************************************
@@ -338,7 +288,7 @@ function shortestSignedDistance(l1, l2, poly1, poly2, s){
     if(aSign ){ dists[0].dist *= (-1)}
 
     dists[1] = distToSegment(l1.pt2, l2, s)
-    var aSign = inPolygon(dists[1].line.pt2, poly1) //check sign based on if A's point is inside B
+    var aSign = inPolygon(dists[1].line.pt2, poly2) //check sign based on if A's point is inside B
     if(aSign ){ dists[1].dist *= (-1)}
 
     dists[2] = distToSegment(l2.pt1, l1, s)
@@ -346,7 +296,7 @@ function shortestSignedDistance(l1, l2, poly1, poly2, s){
     if(aSign ){ dists[2].dist *= (-1)}
 
     dists[3] = distToSegment(l2.pt2, l1, s)
-    var aSign = inPolygon(dists[3].line.pt2, poly1) //check sign based on if A's point is inside B
+    var aSign = inPolygon(dists[3].line.pt2, poly2) //check sign based on if A's point is inside B
     if(aSign ){ dists[3].dist *= (-1)}
 
 
@@ -360,6 +310,32 @@ function shortestSignedDistance(l1, l2, poly1, poly2, s){
     }
   //  if(DEBUG) console.log("SHORTEST DISTANCE " + dists[index].dist);
     return dists[index]
+}
+
+/****************************************
+* Name: printLine
+* Description: Prints the line between the points specified in "value"
+* Input: name as string identifier, value as a line to draw, color as
+*        line color, s as snap object for drawing
+* Output: Nothing
+*****************************************/
+function printLine(name, value, color, s){
+  // draw absolute minimum line or point of intersection
+  console.log("Unsigned max distance is " + value.dist + " in " + color)
+  if(value.dist != 0){
+    var l = s.polyline(value.line.pt1.x, value.line.pt1.y, value.line.pt2.x, value.line.pt2.y)
+    l.attr({
+      stroke: color,
+  		strokeWidth: 2
+    })
+  }
+  else{
+    var c = s.circle(value.line.pt1.x, value.line.pt1.y, 5);
+    c.attr({
+      fill: color,
+      distanceType: "name"
+    })
+  }
 }
 
 // /****************************************
