@@ -1,10 +1,7 @@
 var CANVAS_WIDTH    = 800
 var CANVAS_HEIGHT   = 700
-//var DEBUG           = true
- var DEBUG           = false
-
-
-
+var DEBUG           = true
+ // var DEBUG           = false
 
 /**** Types Used
 
@@ -24,7 +21,6 @@ point {
 polygon a = [point]
 
 *** */
-
 
 //////////////////// MAIN
 ////////////////////////////////////////
@@ -51,22 +47,21 @@ function main() {
     checkAllPointContainment(poly2, poly1, s)
 
     // find and draw abs min, min, and max distances
-    // minUnsignedDist(poly1, poly2, s)
-    // minUnsignedDist(poly1, poly2, s)
+    minUnsignedDist(poly1, poly2, s)
+    minUnsignedDist(poly1, poly2, s)
 
-    // minSignedDist(poly1, poly2, s)
-    // minSignedDist(poly2, poly1, s)
+    minSignedDist(poly1, poly2, s)
+    minSignedDist(poly2, poly1, s)
 
-    // maxSignedDist(poly1, poly2, s)
-    // maxSignedDist(poly2, poly1, s)
+    maxSignedDist(poly1, poly2, s)
+    maxSignedDist(poly2, poly1, s)
 
-   // maxUnsignedDist(poly1, poly2, s)
-   // maxUnsignedDist(poly2, poly1, s)
+   maxUnsignedDist(poly1, poly2, s)
+   maxUnsignedDist(poly2, poly1, s)
 }
 
 //////////////////// POLYGON DISTANCE FUNCTIONS
 ////////////////////////////////////////
-
 
 //         DONE
 /****************************************
@@ -368,9 +363,11 @@ function printLine(name, value, color, s){
 function sqr(x) {
   return x * x
 }
+
 function dist2(v, w) {
   return sqr(v.x - w.x) + sqr(v.y - w.y)
 }
+
 /****************************************
 * finds shortest dist of a single point to a line segment
 * returns object with line in coord form and distance
@@ -492,11 +489,11 @@ function checkAllPointContainment(poly1, poly2, s){
   var visualizePoints = true
 
   for(var i = 0; i < poly1.length; i++){
-    if (inPolygon(poly1[i], poly2)){
+    if (inPolygon(poly1[i], poly2)) {
       inside = true;
       fillColor = "#0C0"
     } else fillColor = "#F00"
-    if (visualizePoints){
+    if (visualizePoints) {
       var point = s.circle(poly1[i].x, poly1[i].y, 4)
       point.attr({
         fill: fillColor
@@ -579,8 +576,6 @@ function drawHullPointsFromSVG(inputSVG, s){
 ////////////////// MISC HELPER FUNCTIONS AND POLY LINE FUNCTIONS
 /////////////////////////////////////////////////////////////////
 
-
-
 ////// POLY Lines
 //////////////////////////////////////////
 
@@ -602,6 +597,7 @@ function renderIntersect(s, l1, l2) {
         console.log("The lines do not intersect!")
     }
 }
+
 /****************************************
 * Render lines in pt form
 *****************************************/
@@ -658,11 +654,13 @@ function genPoint([xmin, xmax], [ymin, ymax]) {
     y = Math.floor(Math.random() * (ymax - ymin)) + ymin;
     return {x, y}
 }
+
 function genLine(xRange, yRange) {
     pt1 = genPoint(xRange, yRange)
     pt2 = genPoint(xRange, yRange)
     return {pt1, pt2}
 }
+
 /****************************************
 * renders a point in list form
 *****************************************/
@@ -672,6 +670,7 @@ function renderPoint(s, pt) {
     renderedPoint.attr({ fill: "red" })
     return renderedPoint
 }
+
 /****************************************
 * List of points to list of coordinate objects
 *****************************************/
@@ -693,7 +692,7 @@ function randomColor() {
     return '#' + Math.floor(Math.random()*16777215).toString(16);
 }
 
-// Main function invokation
+// Main function invocation
 $(document).ready(function () {
     main();
 });
