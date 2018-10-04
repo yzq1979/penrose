@@ -47,17 +47,28 @@ function main() {
     checkAllPointContainment(poly2, poly1, s)
 
     // find and draw abs min, min, and max distances
-    minUnsignedDist(poly1, poly2, s)
-    minUnsignedDist(poly1, poly2, s)
+    console.log("=============================");
+    console.log("Calculating distances");
 
+    console.log("Min unsigned dist (blue): A, B");
+    minUnsignedDist(poly1, poly2, s)
+    console.log("Min unsigned dist (blue): B, A");
+    minUnsignedDist(poly2, poly1, s)
+
+    console.log("Min signed dist (purple): A, B");
     minSignedDist(poly1, poly2, s)
+    console.log("Min signed dist (purple): B, A");
     minSignedDist(poly2, poly1, s)
 
+    console.log("Max signed dist (yellow): A, B");
     maxSignedDist(poly1, poly2, s)
+    console.log("Max signed dist (yellow): B, A");
     maxSignedDist(poly2, poly1, s)
 
-   maxUnsignedDist(poly1, poly2, s)
-   maxUnsignedDist(poly2, poly1, s)
+    console.log("Max unsigned dist (pink): A, B");
+    maxUnsignedDist(poly1, poly2, s)
+    console.log("Max unsigned dist (pink): B, A");
+    maxUnsignedDist(poly2, poly1, s)
 }
 
 //////////////////// POLYGON DISTANCE FUNCTIONS
@@ -71,7 +82,7 @@ function main() {
 * Return: nothing
 *****************************************/
 function minUnsignedDist(poly1, poly2, s){
-  if(DEBUG) console.log("...Calculating unsigned min distance (in blue)")
+  // if(DEBUG) console.log("...Calculating min unsigned distance (in blue)")
   // as we iterate through the edges in the polygon, we compare each edge in A
   // against every edge in B and save the shortest unsigned distance
   absMin = {}
@@ -105,7 +116,7 @@ function minUnsignedDist(poly1, poly2, s){
 * Output: nothing
 *****************************************/
 function maxUnsignedDist(poly1, poly2, s){
-  if(DEBUG) console.log("...Calculating unsigned max distance (in pink)")
+  // if(DEBUG) console.log("...Calculating max unsigned distance (in pink)")
   minUnsignedLocal = {}
   minUnsignedLocal.dist = Number.MAX_SAFE_INTEGER
   maxUnsignedAll = {}
@@ -146,7 +157,7 @@ function maxUnsignedDist(poly1, poly2, s){
 * Output: nothing
 *****************************************/
 function maxSignedDist(poly1, poly2, s){
-      if(DEBUG) console.log("...Calculating max signed distance (in yellow)")
+      // if(DEBUG) console.log("...Calculating max signed distance (in yellow)")
       minLocal = {}
       minLocal.dist = Number.MAX_SAFE_INTEGER
       maxAll = {}
@@ -192,7 +203,7 @@ function maxSignedDist(poly1, poly2, s){
 * Output: nothing
 *****************************************/
 function minSignedDist(poly1, poly2, s){
-    if(DEBUG) console.log("...Calculating min signed distance (in purple)")
+    // if(DEBUG) console.log("...Calculating min signed distance (in purple)")
     min = {}
     min.dist = Number.MAX_SAFE_INTEGER
     for(var i = 0; i < poly1.length-1; i++){
@@ -316,7 +327,9 @@ function shortestSignedDistance(l1, l2, poly1, poly2, s){
 *****************************************/
 function printLine(name, value, color, s){
   // draw absolute minimum line or point of intersection
-  console.log("Unsigned max distance is " + value.dist + " in " + color)
+    // TODO: this is confusing output. Is this really the unsigned max?
+  console.log("Distance value: " + value.dist + " in " + color)
+
   if(value.dist != 0){
     var l = s.polyline(value.line.pt1.x, value.line.pt1.y, value.line.pt2.x, value.line.pt2.y)
     l.attr({
