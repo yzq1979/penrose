@@ -46,6 +46,8 @@ function main() {
     checkAllPointContainment(poly1, poly2, s)
     checkAllPointContainment(poly2, poly1, s)
 
+    // TODO: option to have one polygon contained in the other
+
     // find and draw abs min, min, and max distances
     console.log("=============================");
     console.log("Calculating distances");
