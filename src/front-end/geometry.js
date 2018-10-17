@@ -87,31 +87,39 @@ function minUnsignedDist(poly1, poly2, s){
   // if(DEBUG) console.log("...Calculating min unsigned distance (in blue)")
   // as we iterate through the edges in the polygon, we compare each edge in A
   // against every edge in B and save the shortest unsigned distance
-  absMin = {}
-  absMin.dist = Number.MAX_SAFE_INTEGER
-  for(var i = 0; i < poly1.length-1; i++){
-    var a = {}
-    a.pt1 = poly1[i] // save edge in line data type
-    a.pt2 = poly1[i+1]
-    for(var j = 0; j < poly2.length-1; j++){
-      var b = {}
-      b.pt1 = poly2[j] // save edge in line data type
-      b.pt2 = poly2[j+1]
 
-      temp = shortestUnsignedDistance(a, b, s)  // for every point against every edge
-                                                // find shortest distance, NOT SIGN
-      if (temp.dist < absMin.dist){  // Save the global minimum distance and line data type
-        absMin.dist = temp.dist
-        absMin.line = temp.line
-      }
+    // TODO: This function is written very differently from the Haskell equivalent! Maybe we should rewrite it in Haskell
+
+    absMin = {}
+    absMin.dist = Number.MAX_SAFE_INTEGER
+
+    for (var i = 0; i < poly1.length - 1; i++) {
+	var a = {}
+	a.pt1 = poly1[i] // save edge in line data type
+	a.pt2 = poly1[i + 1]
+
+	for (var j = 0; j < poly2.length - 1; j++) {
+	    var b = {}
+	    b.pt1 = poly2[j] // save edge in line data type
+	    b.pt2 = poly2[j + 1]
+
+	    // for every point against every edge
+	    // find shortest distance, NOT SIGN
+	    temp = shortestUnsignedDistance(a, b, s)
+            
+	    // Save the global minimum distance and line data type           
+	    if (temp.dist < absMin.dist) {
+		absMin.dist = temp.dist
+		absMin.line = temp.line
+	    }
+	}
     }
-  }
 
-  printLine("minUnsignedDist", absMin, "blue", s)
+    printLine("minUnsignedDist", absMin, "blue", s)
 }
 
 /****************************************
-* Funtion: maximum signed dsitance
+* Funtion: maximum signed distance
 * Description: line between the point on poly1 that is farthest from the boundary
 *               of poly2 and the closest point on poly2's boundary
 * Input: two polygons poly1 and poly2, snap object s for drawing
@@ -301,7 +309,9 @@ function shortestSignedDistance(l1, l2, poly1, poly2, s){
 
     dists[2] = distToSegment(l2.pt1, l1, s)
     var aSign = inPolygon(dists[2].line.pt2, poly1) //check sign based on if A's point is inside B
-    if(aSign ){ dists[2].dist *= (-1)}
+    if (aSign) { 
+	dists[2].dist *= -1
+    }
 
     dists[3] = distToSegment(l2.pt2, l1, s)
     var aSign = inPolygon(dists[3].line.pt2, poly2) //check sign based on if A's point is inside B
@@ -332,14 +342,14 @@ function printLine(name, value, color, s){
     // TODO: this is confusing output. Is this really the unsigned max?
   console.log("Distance value: " + value.dist + " in " + color)
 
-  if(value.dist != 0){
+  if (value.dist != 0) {
     var l = s.polyline(value.line.pt1.x, value.line.pt1.y, value.line.pt2.x, value.line.pt2.y)
     l.attr({
       stroke: color,
   		strokeWidth: 2
     })
   }
-  else{
+  else {
     var c = s.circle(value.line.pt1.x, value.line.pt1.y, 5);
     c.attr({
       fill: color,
