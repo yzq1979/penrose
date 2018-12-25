@@ -1,5 +1,5 @@
 // Map between "tag" and corresponding component
-import Circle from "./Circle";
+import Circle from "./sketchy/Circle";
 import Image from "./Image";
 import Label from "./Label";
 import Rectangle from "./Rectangle";
