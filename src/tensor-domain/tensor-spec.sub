@@ -1,0 +1,37 @@
+Dim n, m, o, p
+n == o
+p > m
+
+Vector x, y : (o)
+Matrix A : (m, o)
+Matrix B : (n, m)
+Matrix C : (p, n)
+
+
+------------- alternative 2: with named intermediate results
+Vector z : (o) = x + y
+Matrix BA : (n, o) = B *. A
+Vector q : (n) = BA * z
+Vector w : (p) = C * q
+
+-- applies to both alternatives: currently, the forward/backward choice of style is all in Style
+-- indices are sampled to be within the tensor’s dimensions
+
+-- forward
+Index i, j
+SelectedElemM(A, i, j)
+
+-- backward
+Index i
+SelectedElemV(w, i)
+
+AutoLabel All
+NoLabel z BA q w
+
+
+------------- alternative 1: as one expression
+-- Vector w : (p) = C * ((B ** A) * (x + y))
+--
+-- Autolabel All
+-- Label w None
+-- anonymous expressions cannot be labeled

@@ -1,0 +1,185 @@
+global {
+	global.opacity_change = 0.1
+}
+
+Dim c {
+	val = rand(1, 10)
+}
+
+c < d
+where Dim c, d {
+	override d.val = c.val + rand(1, 10)
+}
+
+c == d
+where Dim c, d {
+	override c.val = d.val
+}
+
+Vector v : (c)
+where Dim c {
+	-- requires adding lists as a datatype Style supports
+	sel_vals = []
+
+	shape = Grid {
+		angle = 0
+		rows = c.val
+		cols = 1
+		text = v.label -- should this be a nested graphical primitive?
+		filled-elems = v.sel_vals
+		fill-color = global.sel_color
+}
+
+labelFn = encourage below(v.shape.text, v.shape)
+}
+
+Matrix A : (c, d)
+where Dim c, d {
+	sel_vals = []
+
+	shape = Grid {
+		angle = 0
+		rows = c.val
+		cols = d.val
+		text = A.label
+		filled-elems = A.sel_vals
+		fill-color = global.sel_color
+}
+
+labelFn = encourage below(a.shape.text, A.shape)
+}
+
+Index i { }
+
+SelectedElemV(v, i)
+where Vector v : (c); Dim c; Index i {
+	i.val = sample(0, c.val)
+	override v.sel_vals = [i.val]
+}
+
+SelectedElemM(A, i, j)
+where Matrix A : (c, d); Dim c, d; Index i, j {
+	i.val = sample(0, c.val)
+	j.val = sample(0, d.val)
+	override A.sel_vals = [(i.val, j.val)] --  Style needs to support a list of tuples?
+}
+
+-- place computational DAG in a vertical tree layout with operations going upward
+-- TODO: could also globally compute a tree layout, rather than using optimization locally -- not sure how to specify that
+-- “:=” is used to match anonymous expressions at any position in a larger expression, unifying variables by type
+-- e.g. “b := A * x” will match and unify with the Substance program, with substitution [A ~> (`B` ** `A`),    x ~> (`x` + `y`)]
+
+-- vector addition
+w := u + v
+where Vector u, v, w : (c); Dim c {
+	-- forward
+	override w.sel_vals = union(u.sel_vals, v.sel_vals)
+override w.shape.fill_color = average(u.shape.fill_color, v.shape.fill_color) - global.opacity_change
+
+	-- backward
+	override u.sel_vals = w.sel_vals
+	override v.sel_vals = w.sel_vals
+override u.shape.fill_color = w.shape.fill_color - global.opacity_change
+override v.shape.fill_color = w.shape.fill_color - global.opacity_change
+
+	-- vectors u, v, w have already been instantiated
+	w.opSign = Text {
+		string = “+”
+}
+
+labelOpFn = encourage below(w.opSign, w.shape)
+
+w.arr1 = Arrow {
+	from = u.shape
+	to = w.shape
+}
+
+w.arr2 = Arrow {
+from = v.shape
+to = w.shape
+}
+
+w.posFn1 = encourage below(u.shape, w.shape)
+w.posFn2 = encourage below(u.shape, v.shape)
+	w.centerFn1 = encourage sameX(u.shape, w.shape)
+	w.centerFn2 = encourage sameX(u.shape, v.shape)
+}
+
+-- matrix addition
+C := A +. B
+where Matrix A, B, C : (c, d); Dim c, d {
+	-- omitted -- similar to vector addition
+}
+
+-- matrix-vector multiplication (left)
+b := A * x
+where Matrix A : (c, d); Vector x : (d); Vector b : (c); Dim c, d {
+	-- forward
+	override b.sel_vals = union(rows(A.sel_vals), cols(b.sel_vals))
+override b.shape.fill_color =  average(A.shape.fill_color, x.shape.fill_color) - global.opacity_change
+
+	-- backward
+	override A.sel_vals = rows(b.sel_vals)
+	override x.sel_vals = all_if_sel(b.sel_vals)
+override A.shape.fill_color = b.shape.fill_color - global.opacity_change
+override x.shape.fill_color = b.shape.fill_color - global.opacity_change
+
+	-- otherwise, very similar to vector addition
+	b.opSign = Text {
+		string = “*”
+}
+
+
+	b.labelOpFn = encourage below(b.opSign, b.shape)
+
+b.arr1 = Arrow {
+	from = A.shape
+	to = b.shape
+}
+
+b.arr2 = Arrow {
+from = x.shape
+to = b.shape
+}
+
+b.posFn1 = encourage below(b.shape, A.shape)
+b.posFn2 = encourage below(b.shape, x.shape)
+	b.centerFn1 = encourage sameX(b.shape, A.shape)
+	b.centerFn2 = encourage sameX(b.shape, x.shape)
+}
+
+-- matrix-matrix multiplication
+C := A *. B
+where Matrix A : (n, m), Matrix B : (m, o), Matrix C : (n, o); Dim n, m, o {
+	-- forward
+	override C.sel_vals = union(rows(A.sel_vals), cols(B.sel_vals))
+override C.shape.fill_color =  average(A.shape.fill_color, B.shape.fill_color) - global.opacity_change
+
+	-- backward
+	override A.sel_vals = rows(C.sel_vals)
+	override B.sel_vals = cols(C.sel_vals)
+override A.shape.fill_color = C.shape.fill_color - global.opacity_change
+override B.shape.fill_color = C.shape.fill_color - global.opacity_change
+
+-- otherwise, very similar to the other operations in the computational graph/tree
+	C.opSign = Text {
+		string = “*”
+}
+
+	C.labelOpFn = encourage below(C.opSign, C.shape)
+
+C.arr1 = Arrow {
+	from = A.shape
+	to = C.shape
+}
+
+C.arr2 = Arrow {
+from = B.shape
+to = C.shape
+}
+
+C.posFn1 = encourage below(C.shape, A.shape)
+C.posFn2 = encourage below(C.shape, B.shape)
+	C.centerFn1 = encourage sameX(C.shape, A.shape)
+	C.centerFn2 = encourage sameX(C.shape, B.shape)
+}
