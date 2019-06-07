@@ -40,6 +40,7 @@ constrFuncDict = M.fromList flist
 objFuncDict :: forall a. (Autofloat a) => M.Map String (ObjFnOn a)
 objFuncDict = M.fromList flist
     where flist = [
+                    ("align", align),
                     ("center", center),
                     ("centerLabel", centerLabel),
                     ("centerMap", centerMap),

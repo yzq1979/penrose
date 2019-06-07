@@ -780,7 +780,8 @@ sharedP [Val (FloatV a), Val (FloatV b), Val (FloatV c), Val (FloatV d)] =
          in Val $ FloatV common
 
 angleOf :: ConstCompFn
-angleOf [GPI l@("Line", _), Val (FloatV originX), Val (FloatV originY)] =
+angleOf [GPI l, Val (FloatV originX), Val (FloatV originY)] 
+    | linelike l = 
         let origin = (originX, originY)
             (start, end) = (getPoint "start" l, getPoint "end" l)
             endpoint = if origin == start then end else start -- Pick the point that's not the origin
@@ -788,6 +789,7 @@ angleOf [GPI l@("Line", _), Val (FloatV originX), Val (FloatV originY)] =
             angleRad = atan2 rayY rayX
             angle = (angleRad * 180) / pi
         in Val $ FloatV angle
+    | otherwise = error "Expecting the first arg to be a line-like GPI!"
 
 perp :: Autofloat a => Pt2 a -> Pt2 a -> Pt2 a -> a -> Pt2 a
 perp start end base len = let dir = normalize' $ end -: start
