@@ -64,7 +64,7 @@ invokeOptFn dict n args signatures =
 
 -- For a very limited form of supertyping...
 linelike :: Autofloat a => Shape a -> Bool
-linelike shape = fst shape == "Line" || fst shape == "Arrow"
+linelike shape = fst shape == "Line" || fst shape == "Arrow" || fst shape == "LineTransform"
 
 --------------------------------------------------------------------------------
 -- Computations
@@ -225,6 +225,9 @@ constComp f = \args g -> (f args, g) -- written in the lambda fn style to be mor
 repelWeight :: (Autofloat a) => a
 repelWeight = 10000000
 
+alignWeight :: (Autofloat a) => a
+alignWeight = 10000
+
 -- | 'objFuncDict' stores a mapping from the name of objective functions to the actual implementation
 objFuncDict :: forall a. (Autofloat a) => M.Map String (ObjFnOn a)
 objFuncDict = M.fromList
@@ -272,6 +275,7 @@ objFuncDict = M.fromList
         ("nearPoint2", nearPoint2),
         ("alignAlong", alignAlong),
         ("orderAlong", orderAlong)
+
 
         -- ("sameX", sameX)
 {-      ("centerLine", centerLine),
@@ -338,6 +342,7 @@ constrFuncDict = M.fromList $ map toPenalty flist
         flist =
             [
                 ("at", at),
+                ("align", (*) alignWeight . align),
                 ("contains", contains),
                 ("sameHeight", sameHeight),
                 ("nearHead", nearHead),
@@ -1032,6 +1037,7 @@ joinPath [Val (PtListV pq), Val (PtListV qr), Val (PtListV rp)] =
 --------------------------------------------------------------------------------
 -- Objective Functions
 
+
 near :: ObjFn
 near [GPI o, Val (FloatV x), Val (FloatV y)] = distsq (getX o, getY o) (x, y)
 near [GPI o1, GPI o2] = distsq (getX o1, getY o1) (getX o2, getY o2)
@@ -1209,6 +1215,12 @@ distBetween [GPI c1@("Circle", _), GPI c2@("Circle", _), Val (FloatV padding)] =
 
 --------------------------------------------------------------------------------
 -- Constraint Functions
+
+
+align :: ConstrFn
+align [GPI a, GPI b]    
+    | linelike a && linelike b = (slope a - slope b)^2
+    | otherwise = error "align: arguments expected to be linelike shapes!" where slope line = let (sx, sy, ex, ey) = linePts line in (ey - sy) / (ex - sx + epsd) 
 
 at :: ConstrFn
 at [GPI o, Val (FloatV x), Val (FloatV y)] =
