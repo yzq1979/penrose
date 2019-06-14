@@ -323,7 +323,5 @@ where u := scale(c,v); In(u,U); In(v,U){
 Vector u, v
 with VectorSpace U
 where LinearlyDependent(u, v); In(u, U); In(v, U) {
-    u.shape.polygon = polygonizeCurve(5, u.shape)
-    v.shape.polygon = polygonizeCurve(5, v.shape)
-    u.alignFn = encourage alignAlong(u.shape, v.shape, angle(u.shape, U.shape.x, U.shape.y))
+    u.alignFn = ensure align(u.shape, v.shape)
 }
