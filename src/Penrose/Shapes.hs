@@ -730,7 +730,7 @@ ellipseType =
       , ("strokeWidth", (FloatT, stroke_sampler))
       , ("style", (StrT, sampleDiscrete [StrV "filled"]))
       , ("strokeColor", (ColorT, sampleColor))
-      , ("strokeStyle", (StrT, stroke_style_sampler))
+      , ("strokeStyle", (StrT, constValue $ StrV "solid"))
       , ("color", (ColorT, sampleColor))
       , ("name", (StrT, constValue $ StrV "defaultEllipse"))
       ])

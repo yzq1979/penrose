@@ -2,9 +2,11 @@ plugin "alloy"
 
 G {
   G.textTopOffset = 30.0
+  G.textBottomOffset = 30.0
   G.pointOffset = 10.0
   G.arrowOffset = 20.0
-  G.fontSize = "30pt"
+  G.fontSize = "25pt"
+  G.domainPointSize = 8.0
 }
 
 Colors {
@@ -13,9 +15,23 @@ Colors {
 }
 
 Set x {
+    -- Underlying ellipse (for positioning)
     x.shape = Ellipse {
-        strokeWidth : 0.0
+        color : Colors.none
+	strokeColor: Colors.none
+        strokeWidth : 1.0
+	strokeStyle : "dashed"
         ry: 1.5 * x.shape.rx
+    }
+
+    -- Coefficients are picked to reflect the location that the ellipse usually takes. It's just a few px off usually
+    x.bg = Image {
+    	 path : "SetsDiscreteBackground.svg"
+	 centerX : x.shape.x - 2.0
+	 centerY : x.shape.y - 5.5
+	 lengthX : x.shape.rx * 2.1
+	 lengthY : x.shape.ry * 2.2
+	 rotation : 0.0
     }
 
     x.text = Text {
@@ -37,25 +53,16 @@ with Set A
 where PointIn(A, p) {
     p.shape = Circle {
         strokeWidth : 0.0
-	strokeColor : Colors.none
-        color : scaleColor(A.shape.color, 0.5)
-        r : 10.0
+	strokeColor : Colors.black
+        color : Colors.black
+        r : G.domainPointSize
         x : A.shape.x
     }
 
-    -- p.text = Text {
-    --     string : p.label
-    --     x : p.shape.x + G.pointOffset
-    --     y : p.shape.y + G.pointOffset
-    -- }
-
     p.containsFn = ensure contains(A.shape, p.shape, 0.3 * A.shape.ry)
     p.layering = p.shape above A.shape
-    -- p.textLayering = p.text above A.shape
 }
 
--- TODO: It would be cool to apply a linear gradient between the set colors to the map
--- https://developer.mozilla.org/en-US/docs/Web/SVG/Element/linearGradient
 Map f
 with Set A; Set B
 where From(f, A, B) {
@@ -66,18 +73,26 @@ where From(f, A, B) {
     f.text = Text {
         string : f.label
         x : average(A.shape.x, B.shape.x)
-        y : A.shape.y + A.shape.ry + G.textTopOffset
+        y : A.shape.y - A.shape.ry - G.textBottomOffset
         fontSize : G.fontSize
     }
 }
 
-Point p; Point q
-with Map f
-where PairIn(p, q, f) {
-    LOCAL.mapPaddingY = ?
-
+Point q -- All points in the codomain of f
+with Map f; Set A; Set B
+where From(f, A, B); PointIn(B, q) {
+      -- TODO: would be better to generate In statements, not PointIn
     q.inverseColor = sampleColor(1.0)
-    -- This will get overridden if multiple `p` map to a `q`, but only the final color will be used for all `p`
+    override q.shape.color = q.inverseColor
+    override q.shape.strokeWidth = 2.5
+    override q.shape.strokeColor = Colors.black
+    override q.shape.r = G.domainPointSize + 1.0
+}
+
+Point p; Point q
+with Map f; Set A; Set B
+where PairIn(p, q, f); From(f, A, B) {
+    LOCAL.mapPaddingY = ?
 
     p.mapShape = Arrow {
         startX : p.shape.x + G.arrowOffset
@@ -87,7 +102,6 @@ where PairIn(p, q, f) {
         thickness : 4.0
         arrowheadSize : 0.6
         color  : q.inverseColor
-	-- TODO: Might be easier to distinguish between the arrows if they were different colors, but can't sample solid colors
     }
 
     -- Try to get the arrowheads to point at the right mapped point
@@ -95,6 +109,8 @@ where PairIn(p, q, f) {
 
     p.arrowLayering1 = p.mapShape above p.shape
     p.arrowLayering2 = p.mapShape above q.shape
+    p.arrowLayering3 = p.mapShape above A.bg
+    p.arrowLayering4 = p.mapShape above B.bg
 }
 
 Point p1; Point p2; Point q
@@ -112,4 +128,29 @@ with Set A
 where PointIn(A, p); PointIn(A, q) {
     LOCAL.repelFn = encourage repel(p.shape, q.shape, 0.001)
     LOCAL.sameXFn = encourage equal(p.shape.x, q.shape.x)
+}
+
+-- TODO: this seems wrong??
+Map f
+with Set domain; Set image
+where From(f, domain, image); Onto(f); Not(OneToOne(f)) {
+      override f.text.string = "\\text{surjection}"
+}
+
+Map f
+with Set domain; Set image
+where From(f, domain, image); Not(Onto(f)); OneToOne(f) {
+      override f.text.string = "\\text{injection}"
+}
+
+Map f
+with Set domain; Set image
+where From(f, domain, image); Not(Onto(f)); Not(OneToOne(f)) {
+      override f.text.string = "\\text{general}"
+}
+
+Map f
+with Set domain; Set image
+where From(f, domain, image); Onto(f); OneToOne(f) {
+      override f.text.string = "\\text{bijection}"
 }
