@@ -1,28 +1,29 @@
 -- Main types
-tconstructor List ('X : type) : type
-vconstructor Cons ['X : type] (head : 'X, tail : List('X)) : List('X)
-vconstructor Nil ['X : type] : List('X)
+-- TODO: support list?
+-- type List ('X : type) : type
+-- function Cons ['X : type] (head : 'X, tail : List('X)) : List('X)
+-- function Nil ['X : type] : List('X)
 
-tconstructor Vertex : type
-tconstructor Edge : type
-tconstructor Graph : type
+type Node
+type Edge
+type Graph
 
 -- Subtypes
-tconstructor UndirectedEdge : type
-tconstructor DirectedEdge : type
-tconstructor UndirectedGraph : type
-tconstructor DirectedGraph : type
-tconstructor Tree : type
-tconstructor BinaryTree : type
-tconstructor Face : type
-tconstructor Path : type
-tconstructor Cycle : type
+type UndirectedEdge
+type DirectedEdge
+type UndirectedGraph
+type DirectedGraph
+type Tree
+type BinaryTree
+type Face
+type Path
+type Cycle
 
--- vconstructor GenerateGraph() : Graph
-vconstructor MkGraph(vertices : List(Vertex), edges : List(Edge)) : Graph
-vconstructor MkEdge(v1 : Vertex, v2 : Vertex) : Edge
-vconstructor MkUndirectedEdge(v1 : Vertex, v2 : Vertex) : UndirectedEdge
-vconstructor MkDirectedEdge(v1 : Vertex, v2 : Vertex) : DirectedEdge 
+-- function GenerateGraph() : Graph
+-- function MkGraph : List(Node) * List(Edge) -> Graph
+-- function MkEdge : Node * Node -> Edge
+-- function MkUndirectedEdge : Node * Node -> UndirectedEdge
+-- function MkDirectedEdge : Node * Node -> DirectedEdge 
 -- Would be nice to name these fields "from" and "to"
 
 UndirectedEdge <: Edge
@@ -35,20 +36,24 @@ Face <: Graph
 Path <: Graph
 Cycle <: Graph
 
-operator Union(G1 : Graph, G2 : Graph) : Graph
-operator Product(G1 : Graph, G2 : Graph) : Graph
-operator Neighbors(v : Vertex) : List(Vertex)
-operator FindFace(G : Graph) : Face
-operator FindVertex(G : Graph) : Vertex
+-- operator Union(G1 : Graph, G2 : Graph) : Graph
+-- operator Product(G1 : Graph, G2 : Graph) : Graph
+-- operator Neighbors(v : Node) : List(Node)
+-- operator FindFace(G : Graph) : Face
+-- operator FindVertex(G : Graph) : Node
 
-predicate SelectedV(v : Vertex) : Prop
-predicate SelectedE(e : Edge) : Prop
-predicate Colored(G : Graph) : Prop
-predicate FullyConnected(G : Graph) : Prop
-predicate Bipartite(G : Graph) : Prop
-predicate SmallerDegree(v1 : Vertex, v2 : Vertex) : Prop
-predicate InV(v : Vertex, G : Graph) : Prop
-predicate InE(e : Edge, G : Graph) : Prop
-predicate InF(f : Face, G : Graph) : Prop
+predicate to: Node parent * Node child
+predicate ParentOf2: Node parent * Node child1 * Node child2
+predicate ParentOf3: Node parent * Node child1 * Node child2 * Node child3
 
--- TODO: syntactic sugar
+predicate SelectedV : Node
+predicate SelectedE : Edge
+predicate Colored : Graph
+predicate FullyConnected : Graph
+predicate Bipartite : Graph
+predicate SmallerDegree: Node * Node
+predicate InV: Node * Graph
+predicate InE: Edge * Graph
+predicate InF: Face * Graph
+
+notation "p -> c" ~ "to(p, c)"

@@ -1,6 +1,9 @@
 global {
     global.padding = 20.0
-    global.stroke = 2.0
+    global.edgeStroke = 2.0
+    global.nodeSize = 5.0
+    global.nodeColor = Colors.lightblue
+    global.arrowColor = Colors.black
 }
 
 Colors {
@@ -24,45 +27,95 @@ Colors {
     Colors.bluegreen = rgba(0.44, 0.68, 0.60, 1.0)
 }
 
-Vertex V {
-       V.shape = Circle { 
-         r = 6.0
-	 -- color = Colors.black	 
-	 strokeWidth = 0.0
-       }
-
-       V.text = Text {
-	 x = V.shape.x + global.padding
-	 y = V.shape.y + global.padding
-	 string = V.label
-	 rotation = 0.0
-	 color = V.shape.color
-       }
+Node n {
+  n.text = Text {
+    x: n.shape.x
+    y: n.shape.y
+	  string : n.label
+	  rotation : 0.0
+	  color : n.shape.color -- Why is this color wrong?
+  }
+  n.shape = Rectangle { 
+    w: n.text.w + global.padding * 2.0
+    color : global.nodeColor
+    strokeWidth : 0.0
+  }
 }
 
-Edge E
-where E := MkEdge(v1, v2)
-with Vertex v1; Vertex v2 {
-     E.shape = Line { 
-     	     startX = v1.shape.x
-     	     startY = v1.shape.y
-     	     endX = v2.shape.x
-     	     endY = v2.shape.y
-	     color = Colors.black
-	     thickness = 3.0
-     }
+-- Ported from sty/tree.sty
 
-     E.text = Text {
-       x = midpointX(E.shape) + global.padding
-       y = midpointY(E.shape) + global.padding
-       string = E.label
-       rotation = 0.0
-     }
-
-     E.layering1 = v1.shape above E.shape
-     E.layering2 = v2.shape above E.shape
+Node x; Node y {
+   -- Try to make sure no labels overlap
+   LOCAL.genRepelFn = encourage repel(x.shape, y.shape, 0.0001)
+   encourage equal(x.shape.y, y.shape.y)
 }
 
-Graph G {
+-- TODO: factor out redundant code w/ lists
+Node p; Node c
+where to(p, c) 
+{
+  LOCAL.shape = Arrow {
+    startX : p.shape.x
+    startY : p.shape.y
+    endX : c.shape.x
+    endY : c.shape.y
+    color : global.arrowColor
+    thickness : global.edgeStroke
+  }
 
+  -- Draw the arrow from y to x
+  -- LOCAL.centerFn = encourage centerArrow(LOCAL.shape, p.shape, c.shape)
 }
+
+-- Node p; Node c1; Node c2
+-- where ParentOf2(p, c1, c2) {
+--       LOCAL.shape1 = Arrow {
+--       		  startX : p.shape.x
+--       		  startY : p.shape.y
+--       		  endX : c1.shape.x
+--       		  endY : c1.shape.y
+-- 		  color : global.arrowColor
+-- 		  thickness : global.edgeStroke
+
+--       }
+
+--       LOCAL.shape2 = Arrow {
+--       		  startX : p.shape.x
+--       		  startY : p.shape.y
+--       		  endX : c2.shape.x
+--       		  endY : c2.shape.y
+-- 		  color : global.arrowColor
+-- 		  thickness : global.edgeStroke
+
+--       }
+-- }
+
+-- Node p; Node c1; Node c2; Node c3
+-- where ParentOf3(p, c1, c2, c3) {
+--       LOCAL.shape1 = Arrow {
+--       		  startX : p.shape.x
+--       		  startY : p.shape.y
+--       		  endX : c1.shape.x
+--       		  endY : c1.shape.y
+-- 		  color : global.arrowColor
+-- 		  thickness : global.edgeStroke
+--       }
+
+--       LOCAL.shape2 = Arrow {
+--       		  startX : p.shape.x
+--       		  startY : p.shape.y
+--       		  endX : c2.shape.x
+--       		  endY : c2.shape.y
+-- 		  color : global.arrowColor
+-- 		  thickness : global.edgeStroke
+--       }
+
+--       LOCAL.shape3 = Arrow {
+--       		  startX : p.shape.x
+--       		  startY : p.shape.y
+--       		  endX : c3.shape.x
+--       		  endY : c3.shape.y
+-- 		  color : global.arrowColor
+-- 		  thickness : global.edgeStroke
+--       }
+-- }
