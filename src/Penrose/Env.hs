@@ -9,10 +9,10 @@ module Penrose.Env where
   -- ( VarEnv(..)
   -- , isDeclared
   -- , StmtNotationRule(..)
-  -- ) 
+  -- )
 
 import           Control.Arrow                  ((>>>))
-import           Control.Monad                  (void, MonadPlus)
+import           Control.Monad                  (MonadPlus, void)
 import           Control.Monad.Combinators.Expr hiding (Operator)
 import           Control.Monad.State.Lazy       (StateT)
 import           Data.Functor.Classes
@@ -248,9 +248,9 @@ tryChoice list = choice $ map try list
 sepBy2 :: MonadPlus m => m a -> m sep -> m [a]
 sepBy2 p sep = do
   x <- p
-  (x:) <$> some (sep >> p)
-{-# INLINE sepBy2 #-}
+  (x :) <$> some (sep >> p)
 
+{-# INLINE sepBy2 #-}
 ----------------------------------- AST ----------------------------------------
 data TypeName
   = TypeNameConst String -- these are all names, e.g. “Set”
