@@ -67,6 +67,8 @@ library
             Penrose.GenOptProblem
             Penrose.Shapes
             Penrose.Functions
+            Penrose.Functions.Types
+            Penrose.Functions.Constraints
             Penrose.Transforms
             Penrose.SubstanceTokenizer
             Penrose.Sugarer
