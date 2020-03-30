@@ -44,8 +44,8 @@ Set X {
     X.shape = RectangleTransform {
     	x = 0.0 -- OPTIMIZED
 	y = 0.0 -- OPTIMIZED
-	sizeX = 200.0
-	sizeY = 100.0
+	w = 200.0
+	h = 100.0
 	rotation = 0.0 -- OPTIMIZED
         strokeWidth = 0.0
 	transform = andThen(rotate(X.angle), translate(X.dx, X.dy))
@@ -68,8 +68,8 @@ Set `A` {
 Set `B` {
     -- override `B`.shape.x = -100.0
     -- override `B`.shape.y = -200.0
-    override `B`.shape.sizeX = 100.0
-    override `B`.shape.sizeY = 200.0
+    override `B`.shape.w = 100.0
+    override `B`.shape.h = 200.0
     override `B`.shape.color = setOpacity(Colors.green, 0.5)
 }
 

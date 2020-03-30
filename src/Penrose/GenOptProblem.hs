@@ -743,7 +743,7 @@ evalBinop op v1 v2 =
     (Val _, GPI _) -> error "binop cannot operate on GPI"
     (GPI _, GPI _) -> error "binop cannot operate on GPIs"
 
--- | Given a path that is a computed property of a shape (e.g. A.shape.transformation), evaluate each of its arguments (e.g. A.shape.sizeX), pass the results to the property-computing function, and return the result (e.g. an HMatrix)
+-- | Given a path that is a computed property of a shape (e.g. A.shape.transformation), evaluate each of its arguments (e.g. A.shape.w), pass the results to the property-computing function, and return the result (e.g. an HMatrix)
 computeProperty ::
      (Autofloat a)
   => (Int, Int)

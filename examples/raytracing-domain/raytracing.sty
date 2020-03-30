@@ -29,14 +29,14 @@ Scene s {
     -- optimized fields to be shared with diffuse obj
     s.x = OPTIMIZED
     s.y = OPTIMIZED
-    s.sizeX = OPTIMIZED
-    s.sizeY = OPTIMIZED
+    s.w = OPTIMIZED
+    s.h = OPTIMIZED
 
     s.container = Rectangle {
         x = s.x
         y = s.y
-        sizeX = s.sizeX
-        sizeY = s.sizeY
+        w = s.w
+        h = s.h
         fill  = Colors.none
         strokeColor = Colors.none
         strokeWidth = 1.5
@@ -53,8 +53,8 @@ where InOS(d, s) with Scene s {
         -- optimize height, width, location
         x = s.x
         y = s.y
-        sizeX = s.sizeX
-        sizeY = s.sizeY
+        w = s.w
+        h = s.h
     }
     d.layering = d.shape above s.container
 }
@@ -67,8 +67,8 @@ SpecularObject o {
     o.shape = Rectangle {
         fill = Colors.gray
         -- TODO: sizes are temporary
-        sizeX = 100.0
-        sizeY = 20.0
+        w = 100.0
+        h = 20.0
     }
 }
 
@@ -194,8 +194,8 @@ with PathVertex v1, v2, v3;
 {
     -- NOTE: trying to control rotation first
     override o.shape.rotation = mirrorAngle(e1.shape, e2.shape)
-    override o.shape.x = mirrorPosX(e1.shape, e2.shape, v2.x, v2.y, o.shape.sizeY / -2.0)
-    override o.shape.y = mirrorPosY(e1.shape, e2.shape, v2.x, v2.y, o.shape.sizeY / -2.0)
+    override o.shape.x = mirrorPosX(e1.shape, e2.shape, v2.x, v2.y, o.shape.h / -2.0)
+    override o.shape.y = mirrorPosY(e1.shape, e2.shape, v2.x, v2.y, o.shape.h / -2.0)
 }
 
 ---------------------------NON-COMPILABLE CODE----------------------------------

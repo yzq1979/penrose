@@ -1855,7 +1855,7 @@ topRightOf [GPI l@("Text", _), GPI s@("Square", _)] =
 topRightOf [GPI l@("Text", _), GPI s@("Rectangle", _)] =
   dist
     (getX l, getY l)
-    (getX s + 0.5 * getNum s "sizeX", getY s + 0.5 * getNum s "sizeY")
+    (getX s + 0.5 * getNum s "w", getY s + 0.5 * getNum s "h")
 
 topLeftOf :: ObjFn
 topLeftOf [GPI l@("Text", _), GPI s@("Square", _)] =
@@ -1865,7 +1865,7 @@ topLeftOf [GPI l@("Text", _), GPI s@("Square", _)] =
 topLeftOf [GPI l@("Text", _), GPI s@("Rectangle", _)] =
   dist
     (getX l, getY l)
-    (getX s - 0.5 * getNum s "sizeX", getY s - 0.5 * getNum s "sizeY")
+    (getX s - 0.5 * getNum s "w", getY s - 0.5 * getNum s "h")
 
 nearHead :: ObjFn
 nearHead [GPI l, GPI lab@("Text", _), Val (FloatV xoff), Val (FloatV yoff)] =
@@ -1949,7 +1949,7 @@ contains [GPI outc@("Circle", _), GPI inc@("Circle", _), Val (FloatV padding)] =
   (getNum outc "r" - padding - getNum inc "r")
 contains [GPI c@("Circle", _), GPI rect@("Rectangle", _)] =
   let (x, y, w, h) =
-        (getX rect, getY rect, getNum rect "sizeX", getNum rect "sizeY")
+        (getX rect, getY rect, getNum rect "w", getNum rect "h")
       [x0, x1, y0, y1] = [x - w / 2, x + w / 2, y - h / 2, y + h / 2]
       pts = [(x0, y0), (x0, y1), (x1, y0), (x1, y1)]
       (cx, cy, radius) = (getX c, getY c, getNum c "r")
@@ -1972,12 +1972,12 @@ contains [GPI s@("Square", _), GPI l@("Text", _)] =
   dist (getX l, getY l) (getX s, getY s) - getNum s "side" / 2 +
   getNum l "w" / 2
 contains [GPI r@("Rectangle", _), GPI l@("Text", _), Val (FloatV padding)] =
-    -- TODO: implement precisely, max (w, h)? How about diagonal case?
-  dist (getX l, getY l) (getX r, getY r) - getNum r "sizeX" / 2 +
+  -- TODO: implement precisely, max (w, h)? How about diagonal case?
+  dist (getX l, getY l) (getX r, getY r) - getNum r "w" / 2 +
   getNum l "w" / 2 + padding
 contains [GPI r@("Rectangle", _), GPI c@("Circle", _), Val (FloatV padding)] =
              -- HACK: reusing test impl, revert later
-             let r_l = min (getNum r "sizeX") (getNum r "sizeY") / 2
+             let r_l = min (getNum r "w") (getNum r "h") / 2
                  diff = r_l - getNum c "r"
              in dist (getX r, getY r) (getX c, getY c) - diff + padding
 contains [GPI outc@("Square", _), GPI inc@("Square", _)] =
@@ -2017,13 +2017,13 @@ contains [GPI sq@("Square", _), GPI ar@("Arrow", _)] =
 contains [GPI rt@("Rectangle", _), GPI ar@("Arrow", _)] =
   let (startX, startY, endX, endY) = arrowPts ar
       (x, y) = (getX rt, getY rt)
-      (w, h) = (getNum rt "sizeX", getNum rt "sizeY")
+      (w, h) = (getNum rt "w", getNum rt "h")
       (lx, ly) = (x - w / 2, y - h / 2)
       (rx, ry) = (x + w / 2, y + h / 2)
   in inRange startX lx rx + inRange startY ly ry + inRange endX lx rx +
      inRange endY ly ry
 contains [GPI r@("Rectangle", _), Val (TupV (x, y)), Val (FloatV padding)] =
-             let r_l = min (getNum r "sizeX") (getNum r "sizeY") / 2
+             let r_l = min (getNum r "w") (getNum r "h") / 2
              in dist (getX r, getY r) (x, y) - r_l + padding
 contains [GPI sq@("Square", _), GPI ar@("Line", _)] =
   let (startX, startY, endX, endY) = arrowPts ar
@@ -2036,17 +2036,19 @@ contains [GPI sq@("Square", _), GPI ar@("Line", _)] =
 contains [GPI rt@("Rectangle", _), GPI ar@("Line", _)] =
   let (startX, startY, endX, endY) = arrowPts ar
       (x, y) = (getX rt, getY rt)
-      (w, h) = (getNum rt "sizeX", getNum rt "sizeY")
+      (w, h) = (getNum rt "w", getNum rt "h")
       (lx, ly) = (x - w / 2, y - h / 2)
       (rx, ry) = (x + w / 2, y + h / 2)
   in inRange startX lx rx + inRange startY ly ry + inRange endX lx rx +
      inRange endY ly ry
 
+inRange :: (Autofloat a) => a -> a -> a -> a
 inRange a l r
   | a < l = (a - l) ^ 2
   | a > r = (a - r) ^ 2
   | otherwise = 0
 
+-- What's going on with the in range functions?
 inRange'' :: (Autofloat a) => a -> a -> a -> a
 inRange'' v left right
   | v < left = left - v
@@ -2104,7 +2106,7 @@ limit = max canvasWidth canvasHeight
 maxSize [GPI c@("Circle", _)] = getNum c "r" - r2f (limit / 6)
 maxSize [GPI s@("Square", _)] = getNum s "side" - r2f (limit / 3)
 maxSize [GPI r@("Rectangle", _)] =
-  let max_side = max (getNum r "sizeX") (getNum r "sizeY")
+  let max_side = max (getNum r "w") (getNum r "h")
   in max_side - r2f (limit / 3)
 maxSize [GPI im@("Image", _)] =
   let max_side = max (getNum im "w") (getNum im "h")
@@ -2118,7 +2120,7 @@ minSize :: ConstrFn
 minSize [GPI c@("Circle", _)] = 20 - getNum c "r"
 minSize [GPI s@("Square", _)] = 20 - getNum s "side"
 minSize [GPI r@("Rectangle", _)] =
-  let min_side = min (getNum r "sizeX") (getNum r "sizeY")
+  let min_side = min (getNum r "w") (getNum r "h")
   in 20 - min_side
 minSize [GPI e@("Ellipse", _)] = 20 - min (getNum e "rx") (getNum e "ry")
 minSize [GPI g] =
@@ -2196,14 +2198,12 @@ disjoint [GPI xset@("Square", _), GPI yset@("Square", _)] =
     [ [getX xset, getY xset, 0.5 * getNum xset "side"]
     , [getX yset, getY yset, 0.5 * getNum yset "side"]
     ]
-disjoint [GPI xset@("Rectangle", _), GPI yset@("Rectangle", _), Val (FloatV offset)]
-    -- Arbitrarily using x size
+disjoint [GPI r1@("Rectangle", _), GPI r2@("Rectangle", _), Val (FloatV offset)]
  =
-  noIntersectOffset
-    [ [getX xset, getY xset, 0.5 * getNum xset "sizeX"]
-    , [getX yset, getY yset, 0.5 * getNum yset "sizeX"]
-    ]
-    offset
+   let dx = max 0 $ (getNum r1 "w" + getNum r2 "w") / 2 - abs (getX r1 - getX r2)
+       dy = max 0 $ (getNum r1 "h" + getNum r2 "h") / 2 - abs (getY r1 - getY r2)
+   in (min (dx + offset) (dy + offset)) ^ 2
+
 disjoint [GPI box@("Text", _), GPI seg@("Line", _), Val (FloatV offset)] =
   let center = (getX box, getY box)
       (v, w) = (getPoint "start" seg, getPoint "end" seg)

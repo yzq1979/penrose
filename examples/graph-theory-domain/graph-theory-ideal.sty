@@ -1,6 +1,13 @@
+-- Global system TODOs:
+-- - Optional arguments for functions: `constains` might be implemented for two types with an additional argument, but we can use it without it
+-- - BBox based containment: "a rectangle containing another" doesn't work precisely
+-- - `onCanvas` is not quite precise: it only makes sure that the *center* of a shape is contained on canvas, not the whole thing. The cheapest and safest is to contain the bbox
+-- - "repel by distance": clamp the repel function after some distance between bounding boxes (polygons) of two shapes
+
+
 global {
     global.padding = 20.0
-    global.nodePadding = 20.0
+    global.nodePadding = 5.0
     global.edgeStroke = 2.0
     global.nodeSize = 5.0
     global.nodeColor = Colors.lightblue
@@ -37,20 +44,44 @@ Node n {
     color : n.shape.color 
   }
   n.shape = Rectangle { 
-    w: n.text.w + global.nodePadding
-    h: n.text.h + global.nodePadding
     color : global.nodeColor
     strokeWidth : 1.0
     strokeColor : Colors.black
   }
   n.text above n.shape
+  ensure contains(n.shape, n.text, 0.0)
+  -- ensure center(n.text, n.shape)
   ensure onCanvas(n.text) 
   ensure onCanvas(n.shape)
 }
 
 Node x; Node y {
    -- Try to make sure no labels overlap
-   encourage repel(x.shape.x, y.shape.x, 0.01) 
-   ensure disjoint(x.shape, y.shape, 10.0)
-   ensure equal(x.shape.y, y.shape.y)
+   -- encourage repel(x.shape, y.shape, 0.0001) 
+   ensure disjoint(x.shape, y.shape, 0.0)
 }
+
+Node p; Node c
+where to(p, c) 
+{
+  -- TODO: Weirdly shaped arrows to avoid things
+  LOCAL.shape = Arrow {
+    color : global.arrowColor
+    thickness : global.edgeStroke
+  }
+
+  ensure onCanvas(LOCAL.shape)
+
+  -- The arrow is "in between" the nodes, meaning that they should poke into them, but be as close as possible
+  ensure between(LOCAL.shape, p.shape, c.shape, global.padding) 
+
+  -- Locally encourage the nodes to be ordered from left to right
+  -- TODO: what happens when there's a cycle? 
+  encourage lessThan(p.shape.x, p.shape.x) 
+}
+
+-- GLOBAL: "stem" of the graph
+-- GLOBAL: "flow" of the graph
+
+
+

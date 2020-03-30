@@ -1,0 +1,15 @@
+Node GoalSetting
+Node AssessmentTaskDesign
+Node Data
+Node Theory
+-- Node ModelsAndInsights
+-- Node InstructionalDesign
+-- Node Data2
+
+-- GoalSetting -> AssessmentTaskDesign
+-- AssessmentTaskDesign -> Data
+-- Data -> ModelsAndInsights
+-- ModelsAndInsights -> InstructionalDesign
+-- InstructionalDesign -> Data2
+
+AutoLabel All

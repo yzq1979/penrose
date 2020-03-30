@@ -131,8 +131,8 @@ with Set `domain`; Set `image` {
     `cartesianProduct`.shape = Rectangle {
         x : (`domain`.left.startX + `domain`.right.startX) / 2.0
         y : (`image`.bottom.startY + `image`.top.startY) / 2.0
-        sizeX : `domain`.right.startX - `domain`.left.startX
-        sizeY : `image`.top.startY - `image`.bottom.startY
+        w : `domain`.right.startX - `domain`.left.startX
+        h : `image`.top.startY - `image`.bottom.startY
         color : Colors.lightBlue
     }
 }
