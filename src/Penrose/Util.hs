@@ -145,9 +145,14 @@ cartesianProduct = foldr f [[]]
   where
     f l a = [x : xs | x <- l, xs <- a]
 
--- | given a side of a rectangle, compute the length of the half half diagonal
-halfDiagonal :: (Floating a) => a -> a
-halfDiagonal side = 0.5 * dist (0, 0) (side, side)
+-- | given the width and height of a rectangle, compute the length of the half diagonal
+halfDiagonal :: (Floating a) => a -> a -> a
+halfDiagonal w h = 0.5 * dist (0, 0) (w, h)
+
+-- | given a side of a square, compute the length of the half diagonal
+halfDiagonalSq :: (Floating a) => a -> a
+halfDiagonalSq side = 0.5 * dist (0, 0) (side, side)
+
 
 -- | `compose2` is used to compose with a function that takes in
 -- two arguments. As if now, it is used to compose `penalty` with

@@ -1,5 +1,5 @@
 global {
-    global.padding = 20.0
+    global.padding = 0.0
     global.nodePadding = 20.0
     global.edgeStroke = 2.0
     global.nodeSize = 5.0
@@ -46,11 +46,34 @@ Node n {
   n.text above n.shape
   ensure onCanvas(n.text) 
   ensure onCanvas(n.shape)
+    -- TODO: rename to something else -- encourage repelWithin(0.0, n.shape.x - n.shape.w / 2.0, 100.0, global.padding) 
+  -- encourage repelWithin(800.0, n.shape.x + n.shape.w / 2.0, 100.0, global.padding) 
 }
 
 Node x; Node y {
    -- Try to make sure no labels overlap
-   encourage repel(x.shape.x, y.shape.x, 0.01) 
-   ensure disjoint(x.shape, y.shape, 10.0)
-   ensure equal(x.shape.y, y.shape.y)
+   -- TODO: make sure they work on bboxes
+   -- encourage repelWithin(x.shape, y.shape, 100.0, global.padding) 
+   -- encourage repel(x.shape.x, y.shape.x, 0.01) 
+   -- ensure disjoint(x.shape, y.shape, 10.0)
+   -- ensure equal(x.shape.y, y.shape.y)
+}
+
+Node p; Node c
+where to(p, c) 
+{
+  -- TODO: Weirdly shaped arrows to avoid things
+  LOCAL.shape = Arrow {
+    color : global.arrowColor
+    thickness : global.edgeStroke
+  }
+
+  ensure onCanvas(LOCAL.shape)
+
+  -- The arrow is "in between" the nodes, meaning that they should poke into them, but be as close as possible
+  ensure centerArrow(LOCAL.shape, p.shape, c.shape, global.padding) 
+
+  -- Locally encourage the nodes to be ordered from left to right
+  -- TODO: what happens when there's a cycle? 
+  -- ensure lessThan(p.shape.x, c.shape.x) 
 }

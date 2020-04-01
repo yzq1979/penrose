@@ -25,7 +25,7 @@ import           Data.Maybe            (fromMaybe)
 import qualified Data.MultiMap         as MM
 import           Debug.Trace
 import           Penrose.Shapes
-import           Penrose.Transforms
+import           Penrose.Transforms hiding (getCenter)
 import           Penrose.Util
 import           System.Random         (StdGen, mkStdGen, randomR)
 import           System.Random.Shuffle (shuffle')
@@ -343,6 +343,7 @@ objFuncDict =
     , ("centerLabel", centerLabel)
     , ("centerArrow", centerArrow)
     , ("repel", (*) repelWeight . repel)
+    , ("repelWithin", (*) repelWeight . repelWithin)
     , ("nearHead", nearHead)
     , ("topRightOf", topRightOf)
     , ("nearEndVert", nearEndVert)
@@ -461,6 +462,7 @@ constrFuncDict = M.fromList $ map toPenalty flist
       , ("atDist", atDist)
       , ("labelDisjoint", labelDisjointConstr)
       , ("perpendicular", perpendicularConstr)
+      , ("centerArrow", centerArrow)
       ]
 
 indivConstrWeight :: (Autofloat a) => a
@@ -1702,22 +1704,44 @@ centerLabel [a, b] = sameCenter [a, b]
 --                 let (sx, sy, ex, ey) = (startx' a, starty' a, endx' a, endy' a)
 --                     (mx, my) = midpoint (sx, sy) (ex, ey)
 --                     (lx, ly) = (xl' l, yl' l) in
+
+-- TODO: signed distance 
+distToRect :: (Autofloat a) => Pt2 a -> (a, a, a, a) -> a
+distToRect (px, py) (x, y, w, h) =
+  let dx = max (abs (px - x) - w / 2) 0
+      dy = max (abs (py - y) - h / 2) 0
+  in sqrt $ dx * dx + dy * dy
+
 -- | `centerArrow` positions an arrow between two objects, with some spacing
 centerArrow :: ObjFn
+centerArrow [GPI arr@("Arrow", _), GPI r1@("Rectangle", _), GPI r2@("Rectangle", _), Val (FloatV padding)] = 
+  _centerArrow arr [x1, y1] [x2, y2] [ padding + d1, negate $ padding + d2 ]
+  -- let vec = [x2 - x1, y2 - y1] -- direction the arrow should point to
+  --     dir = normalize vec
+  --     [sx', sy', ex', ey'] = [x1, y1] +. d1 *. dir ++ ([x2, y2] -. d2 *. dir)
+  -- -- in (sx - sx') ^ 2 + (sy - sy') ^ 2 + (ex - ex') ^ 2 + (ey - ey') ^ 2
+  -- in norm (d1 *. dir) + norm (d2 *. dir)
+  where 
+    rect1@(x1, y1, _, _) = (getX r1, getY r1, getNum r1 "w", getNum r1 "h")
+    rect2@(x2, y2, _, _) = (getX r2, getY r2, getNum r2 "w", getNum r2 "h")
+    (sx, sy, ex, ey) = arrowPts arr
+    d1 = distToRect (sx, sy) rect1 
+    d2 = distToRect (ex, ey) rect2 
+
 centerArrow [GPI arr@("Arrow", _), GPI sq1@("Square", _), GPI sq2@("Square", _)] =
   _centerArrow
     arr
     [getX sq1, getY sq1]
     [getX sq2, getY sq2]
-    [ spacing + (halfDiagonal . flip getNum "side") sq1
-    , negate $ spacing + (halfDiagonal . flip getNum "side") sq2
+    [ spacing + (halfDiagonalSq . flip getNum "side") sq1
+    , negate $ spacing + (halfDiagonalSq . flip getNum "side") sq2
     ]
 centerArrow [GPI arr@("Arrow", _), GPI sq@("Square", _), GPI circ@("Circle", _)] =
   _centerArrow
     arr
     [getX sq, getY sq]
     [getX circ, getY circ]
-    [ spacing + (halfDiagonal . flip getNum "side") sq
+    [ spacing + (halfDiagonalSq . flip getNum "side") sq
     , negate $ spacing + getNum circ "radius"
     ]
 centerArrow [GPI arr@("Arrow", _), GPI circ@("Circle", _), GPI sq@("Square", _)] =
@@ -1726,7 +1750,7 @@ centerArrow [GPI arr@("Arrow", _), GPI circ@("Circle", _), GPI sq@("Square", _)]
     [getX circ, getY circ]
     [getX sq, getY sq]
     [ spacing + getNum circ "radius"
-    , negate $ spacing + (halfDiagonal . flip getNum "side") sq
+    , negate $ spacing + (halfDiagonalSq . flip getNum "side") sq
     ]
 centerArrow [GPI arr@("Arrow", _), GPI circ1@("Circle", _), GPI circ2@("Circle", _)] =
   _centerArrow
@@ -1772,24 +1796,28 @@ _centerArrow arr@("Arrow", _) s1@[x1, y1] s2@[x2, y2] [o1, o2] =
         if norm vec > o1 + abs o2
           then (s1 +. o1 *. dir) ++ (s2 +. o2 *. dir)
           else s1 ++ s2
-      [fromx, fromy, tox, toy] =
-        [ getNum arr "startX"
-        , getNum arr "startY"
-        , getNum arr "endX"
-        , getNum arr "endY"
-        ]
+      (fromx, fromy, tox, toy) = arrowPts arr
   in (fromx - sx) ^ 2 + (fromy - sy) ^ 2 + (tox - ex) ^ 2 + (toy - ey) ^ 2
 
 repelPt :: Autofloat a => a -> Pt2 a -> Pt2 a -> a
 repelPt c a b = c / (distsq a b + epsd)
 
+repelWithin :: ObjFn
+repelWithin [Val (FloatV x), Val (FloatV y), Val (FloatV weight), Val (FloatV minDistance)] 
+  | d < minDistance = weight / (d*d + epsd)
+  | otherwise = 0
+  where d = x - y
+repelWithin [GPI shape1, GPI shape2, Val (FloatV weight), Val (FloatV minDistance)]
+  | d < minDistance = weight / (d*d + epsd)
+  | otherwise = 0
+  where 
+    c1 = getCenter shape1
+    c2 = getCenter shape2
+    d  = dist c1 c2
+
 -- | 'repel' exert an repelling force between objects
--- TODO: temporarily written in a generic way
--- Note: repel's energies are quite small so the function is scaled by repelWeight before being applied
 repel :: ObjFn
-
 -- TODO: factor line & arrow together OR account for the arrowhead
-
 repel [GPI line@("Arrow", _), GPI a, Val (FloatV weight)] =
   let (sx, sy, ex, ey) = linePts line
       objCenter = (getX a, getY a)
@@ -1797,8 +1825,7 @@ repel [GPI line@("Arrow", _), GPI a, Val (FloatV weight)] =
       lineSamplePts = sampleS numSamples ((sx, sy), (ex, ey))
       allForces = sum $ map (repelPt weight objCenter) lineSamplePts
       res = weight * allForces
-  in {- trace ("numPoints: " ++ show (length lineSamplePts)) -} res
-
+  in res {- trace ("numPoints: " ++ show (length lineSamplePts)) -}
 -- Repel an object and a line by summing repel forces over the (sampled) body of the line
 repel [GPI line@("Line", _), GPI a, Val (FloatV weight)] =
   let (sx, sy, ex, ey) = linePts line
@@ -1807,32 +1834,27 @@ repel [GPI line@("Line", _), GPI a, Val (FloatV weight)] =
       lineSamplePts = sampleS numSamples ((sx, sy), (ex, ey))
       allForces = sum $ map (repelPt weight objCenter) lineSamplePts
       res = weight * allForces
-  in {- trace ("numPoints: " ++ show (length lineSamplePts)) -} res
-
-repel [Val (FloatV x), Val (FloatV y)] = 1 / ((x-y)*(x-y) + epsd)
-
-repel [Val (FloatV x), Val (FloatV y), Val (FloatV weight)] = weight / ((x-y)*(x-y) + epsd)
-
-repel [Val (FloatV u), Val (FloatV v), Val(FloatV weight), Val (StrV "angle")] = 
-           let duv = angleDist u v
-           in weight / (duv * duv + epsd)
-
+  in res {- trace ("numPoints: " ++ show (length lineSamplePts)) -}
+repel [Val (FloatV x), Val (FloatV y)] = 1 / ((x - y) * (x - y) + epsd)
+repel [Val (FloatV x), Val (FloatV y), Val (FloatV weight)] =
+  weight / ((x - y) * (x - y) + epsd)
+repel [Val (FloatV u), Val (FloatV v), Val (FloatV weight), Val (StrV "angle")] =
+  let duv = angleDist u v
+  in weight / (duv * duv + epsd)
 -- Repel an object and a curve by summing repel forces over the (subsampled) body of the surve
 repel [GPI curve@("Curve", _), GPI a, Val (FloatV weight)] =
   let curvePts = subsampleEvery sampleNum $ polyPts $ getPolygon curve
       objCenter = (getX a, getY a)
       allForces = sum $ map (repelPt weight objCenter) curvePts
       res = weight * allForces
-  in {- trace ("numPoints: " ++ show (length curvePts)) -}
-     res
-  where sampleNum = 3
-
+     {- trace ("numPoints: " ++ show (length curvePts)) -}
+  in res
+  where
+    sampleNum = 3
 repel [Val (TupV x), Val (TupV y)] = 1 / (distsq x y + epsd)
 repel [GPI a, GPI b] = 1 / (distsq (getX a, getY a) (getX b, getY b) + epsd)
 repel [GPI a, GPI b, Val (FloatV weight)] =
   weight / (distsq (getX a, getY a) (getX b, getY b) + epsd)
-    -- trace ("REPEL: " ++ show a ++ "\n" ++ show b ++ "\n" ++ show res) res
-
 -- repel [C' c, S' d] [] = 1 / distsq (xc' c, yc' c) (xs' d, ys' d) - r' c - side' d + epsd
 -- repel [S' c, C' d] [] = 1 / distsq (xc' d, yc' d) (xs' c, ys' c) - r' d - side' c + epsd
 -- repel [P' c, P' d] [] = if c == d then 0 else 1 / distsq (xp' c, yp' c) (xp' d, yp' d) - 2 * r2f ptRadius + epsd
@@ -1847,6 +1869,7 @@ repel [GPI a, GPI b, Val (FloatV weight)] =
 --         repel' (endx' c, endy' c) (xc' d, yc' d)
 -- repel [IM' c, IM' d] [] = 1 / (distsq (xim' c, yim' c) (xim' d, yim' d) + epsd) - sizeXim' c - sizeXim' d --TODO Lily check this math is correct
 -- repel [a, b] [] = if a == b then 0 else 1 / (distsq (getX a, getY a) (getX b, getY b) )
+
 topRightOf :: ObjFn
 topRightOf [GPI l@("Text", _), GPI s@("Square", _)] =
   dist
@@ -2063,6 +2086,14 @@ inRange' [Val (FloatV v), Val (FloatV left), Val (FloatV right)]
 
 -- = inRange v left right
 onCanvas :: ConstrFn
+onCanvas [GPI a@("Arrow", _)] =
+  let (startX, startY, endX, endY) = arrowPts a
+      (leftX, rightX) = (-canvasHeight / 2, canvasHeight / 2)
+      (leftY, rightY) = (-canvasWidth / 2, canvasWidth / 2)
+  in inRange'' startX (r2f leftX) (r2f rightX) +
+     inRange'' startY (r2f leftY) (r2f rightY) +
+     inRange'' endX (r2f leftX) (r2f rightX) +
+     inRange'' endY (r2f leftY) (r2f rightY) 
 onCanvas [GPI g] =
   let (leftX, rightX) = (-canvasHeight / 2, canvasHeight / 2)
       (leftY, rightY) = (-canvasWidth / 2, canvasWidth / 2)
@@ -2146,7 +2177,7 @@ smallerThan [GPI inc@("Circle", _), GPI outc@("Circle", _)] =
 smallerThan [GPI inc@("Circle", _), GPI outs@("Square", _)] =
   0.5 * getNum outs "side" - getNum inc "r"
 smallerThan [GPI ins@("Square", _), GPI outc@("Circle", _)] =
-  halfDiagonal $ getNum ins "side" - getNum outc "r"
+  halfDiagonalSq $ getNum ins "side" - getNum outc "r"
 smallerThan [GPI ins@("Square", _), GPI outs@("Square", _)] =
   getNum ins "side" - getNum outs "side" - subsetSizeDiff
 
