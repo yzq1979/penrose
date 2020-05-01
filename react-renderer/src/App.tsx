@@ -6,7 +6,7 @@ import { ILayer } from "./types";
 import { Step, Resample, converged, initial } from "./packets";
 import { Protocol, ConnectionStatus } from "./Protocol";
 import { evalTranslation, decodeState } from "./Evaluator";
-import { step, stepEP } from "./Optimizer";
+import { step, OptimizerWorker } from "./Optimizer";
 import { unwatchFile } from "fs";
 import { collectLabels } from "./utills/CollectLabels";
 
@@ -18,13 +18,6 @@ interface ICanvasState {
   penroseVersion: string;
 }
 const socketAddress = "ws://localhost:9160";
-
-const stepState = async (state: State, onUpdate: any) => {
-  const newState = step(state!, 2);
-  // onUpdate(newState);
-  const labeledShapes: any = await collectLabels(newState.shapes);
-  onUpdate({ ...newState, shapes: labeledShapes }); // callback for React state update
-};
 
 class App extends React.Component<any, ICanvasState> {
   public readonly state: ICanvasState = {
@@ -39,6 +32,7 @@ class App extends React.Component<any, ICanvasState> {
   };
   public readonly canvas = React.createRef<Canvas>();
   public readonly buttons = React.createRef<ButtonBar>();
+  public optimizerWorker: OptimizerWorker;
   public protocol: Protocol;
   public onConnectionStatus = (conn: ConnectionStatus) => {
     Log.info(`Connection status: ${conn}`);
@@ -48,15 +42,22 @@ class App extends React.Component<any, ICanvasState> {
   };
   public onCanvasState = async (canvasState: State, _: any) => {
     // HACK: this will enable the "animation" that we normally expect
-    await new Promise((r) => setTimeout(r, 1));
-
+    // await new Promise((r) => setTimeout(r, 1));
+    const labeledShapes: any = await collectLabels(canvasState.shapes);
+    const newState = { ...canvasState, shapes: labeledShapes };
     await this.setState({
-      data: canvasState,
+      data: newState,
       processedInitial: true,
     });
+
     const { autostep } = this.state;
-    if (autostep && !converged(canvasState)) {
-      await this.step();
+    if (autostep && !converged(newState)) {
+      await this.step(newState);
+    } else {
+      await this.setState({
+        data: newState,
+        processedInitial: true,
+      });
     }
   };
   public downloadSVG = () => {
@@ -75,9 +76,13 @@ class App extends React.Component<any, ICanvasState> {
       this.step();
     }
   };
-  public step = () => {
+  public stepState = async (state: State) => {
+    const newState = await this.optimizerWorker.step(state!, 2);
+    // await onUpdate({ ...newState, shapes: labeledShapes }); // callback for React state update
+  };
+  public step = async (state = this.state.data!) => {
     // this.protocol.sendPacket(Step(1, this.state.data));
-    stepState(this.state.data!, this.onCanvasState);
+    await this.stepState(state);
   };
 
   public resample = async () => {
@@ -106,12 +111,13 @@ class App extends React.Component<any, ICanvasState> {
     });
 
     this.protocol.setupSockets();
+    this.optimizerWorker = new OptimizerWorker(this.onCanvasState);
   }
 
   public updateData = async (data: any) => {
     await this.setState({ data: { ...data } });
     if (this.state.autostep) {
-      stepState(data, this.state.autostep);
+      this.stepState(data);
     }
   };
 

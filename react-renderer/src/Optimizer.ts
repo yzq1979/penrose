@@ -16,6 +16,29 @@ import {
 } from "./Evaluator";
 import { zip } from "lodash";
 import { constrDict, objDict } from "./Constraints";
+import { createWorker, ITypedWorker } from "typed-web-workers";
+
+export class OptimizerWorker {
+  public worker: ITypedWorker<[State, number], State>;
+  public onMessage: any;
+  constructor(onMessage: any) {
+    console.log(createWorker);
+    this.worker = createWorker({
+      workerFunction: ({ input, callback }) => {
+        console.log(input);
+        // const [state, steps] = input as [State, number];
+        // const stepped = step(state, steps);
+        // callback(stepped);
+      },
+      // onMessage,
+      onMessage: () => console.log("message"),
+      onError: (error) => console.log(`unhandled exception in Worker`),
+    });
+  }
+  public step = (state: State, steps: number) => {
+    this.worker.postMessage([state, steps]);
+  };
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 // Globals
@@ -37,11 +60,11 @@ const epStop = 1e-3;
 const toPenalty = (x: Tensor): Tensor => {
   return tf.pow(tf.maximum(x, tf.scalar(0)), tf.scalar(2));
 };
-const epConverged = (normGrad: Scalar): boolean => {
+const epConverged = async (normGrad: Scalar): Promise<boolean> => {
   // energy heuristic
   // return scalarValue(energy) > 10;
   // via @hypotext
-  return scalarValue(normGrad) < epStop;
+  return (await scalarValue(normGrad)) < epStop;
   // return normGrad.less(scalar(epStop)).dataSync()[0];
   // .then((data) => data);
 };
@@ -55,91 +78,91 @@ const applyFn = (f: FnDone<Tensor>, dict: any) => {
   }
 };
 
-/**
- * Given a `State`, take n steps by evaluating the overall objective function
- *
- * @param {State} state
- * @param {number} steps
- * @returns
- */
-export const stepEP = (state: State, steps: number, evaluate = true) => {
-  const { optStatus, weight } = state.params;
-  let newState = { ...state };
-  let xs: Variable[] = []; // guaranteed to be assigned
-  switch (optStatus.tag) {
-    case "NewIter": {
-      // Collect the overall objective and varying values
-      const overallObjective = evalEnergyOn(state);
-      const newParams: Params = {
-        ...state.params,
-        weight: initConstraintWeight,
-        optStatus: {
-          tag: "UnconstrainedRunning",
-          contents: state.varyingValues.map(differentiable),
-        },
-      };
-      return { ...state, params: newParams, overallObjective };
-    }
-    case "UnconstrainedRunning": {
-      // NOTE: use cached varying values
-      xs = optStatus.contents;
-      const f = state.overallObjective;
-      const fgrad = gradF(f);
-      // NOTE: minimize will mutates xs
-      const { energy, normGrad } = minimize(f, fgrad, xs, steps);
-      // TODO: we could mutate the state, but is this what we want?
-      if (!epConverged(normGrad)) {
-        newState.params.optStatus = {
-          tag: "UnconstrainedRunning",
-          contents: xs,
-        };
-        console.log(`Took ${steps} steps. Current energy`, scalarValue(energy));
-      } else {
-        newState.params.optStatus = {
-          tag: "UnconstrainedConverged",
-          contents: xs,
-        };
-        console.log(
-          "Unconstrainted converged with energy",
-          scalarValue(energy)
-        );
-      }
-      break;
-    }
-    case "UnconstrainedConverged": {
-      xs = optStatus.contents;
-      const f = state.overallObjective;
-      const fgrad = gradF(f);
-      // NOTE: minimize will mutates xs
-      const { energy, normGrad } = minimize(f, fgrad, xs, steps);
-      if (epConverged(normGrad)) {
-        newState.params.optStatus.tag = "EPConverged";
-        console.log("EP converged with energy", scalarValue(energy));
-      } else {
-        // if EP has not converged, increate weight and continue
-        newState.params = {
-          ...newState.params,
-          optStatus: { tag: "UnconstrainedRunning", contents: xs }, // TODO: use which state again?
-          weight: weightGrowthFactor * weight,
-        };
-      }
-      break;
-    }
-    case "EPConverged": // do nothing if converged
-      return state;
-  }
-  // return the state with a new set of shapes
-  if (evaluate) {
-    const varyingValues = xs.map((x) => scalarValue(x as Scalar));
-    newState.translation = insertVaryings(
-      state.translation,
-      zip(state.varyingPaths, varyingValues) as [Path, number][]
-    );
-    newState.varyingValues = varyingValues;
-    newState = evalTranslation(newState);
-  }
-  return newState;
-};
+// /**
+//  * Given a `State`, take n steps by evaluating the overall objective function
+//  *
+//  * @param {State} state
+//  * @param {number} steps
+//  * @returns
+//  */
+// export const stepEP = (state: State, steps: number, evaluate = true) => {
+//   const { optStatus, weight } = state.params;
+//   let newState = { ...state };
+//   let xs: Variable[] = []; // guaranteed to be assigned
+//   switch (optStatus.tag) {
+//     case "NewIter": {
+//       // Collect the overall objective and varying values
+//       const overallObjective = evalEnergyOn(state);
+//       const newParams: Params = {
+//         ...state.params,
+//         weight: initConstraintWeight,
+//         optStatus: {
+//           tag: "UnconstrainedRunning",
+//           contents: state.varyingValues.map(differentiable),
+//         },
+//       };
+//       return { ...state, params: newParams, overallObjective };
+//     }
+//     case "UnconstrainedRunning": {
+//       // NOTE: use cached varying values
+//       xs = optStatus.contents;
+//       const f = state.overallObjective;
+//       const fgrad = gradF(f);
+//       // NOTE: minimize will mutates xs
+//       const { energy, normGrad } = minimize(f, fgrad, xs, steps);
+//       // TODO: we could mutate the state, but is this what we want?
+//       if (!epConverged(normGrad)) {
+//         newState.params.optStatus = {
+//           tag: "UnconstrainedRunning",
+//           contents: xs,
+//         };
+//         console.log(`Took ${steps} steps. Current energy`, scalarValue(energy));
+//       } else {
+//         newState.params.optStatus = {
+//           tag: "UnconstrainedConverged",
+//           contents: xs,
+//         };
+//         console.log(
+//           "Unconstrainted converged with energy",
+//           scalarValue(energy)
+//         );
+//       }
+//       break;
+//     }
+//     case "UnconstrainedConverged": {
+//       xs = optStatus.contents;
+//       const f = state.overallObjective;
+//       const fgrad = gradF(f);
+//       // NOTE: minimize will mutates xs
+//       const { energy, normGrad } = minimize(f, fgrad, xs, steps);
+//       if (epConverged(normGrad)) {
+//         newState.params.optStatus.tag = "EPConverged";
+//         console.log("EP converged with energy", scalarValue(energy));
+//       } else {
+//         // if EP has not converged, increate weight and continue
+//         newState.params = {
+//           ...newState.params,
+//           optStatus: { tag: "UnconstrainedRunning", contents: xs }, // TODO: use which state again?
+//           weight: weightGrowthFactor * weight,
+//         };
+//       }
+//       break;
+//     }
+//     case "EPConverged": // do nothing if converged
+//       return state;
+//   }
+//   // return the state with a new set of shapes
+//   if (evaluate) {
+//     const varyingValues = xs.map((x) => scalarValue(x as Scalar));
+//     newState.translation = insertVaryings(
+//       state.translation,
+//       zip(state.varyingPaths, varyingValues) as [Path, number][]
+//     );
+//     newState.varyingValues = varyingValues;
+//     newState = evalTranslation(newState);
+//   }
+//   return newState;
+// };
 
 /**
  * Generate an energy function from the current state
@@ -181,7 +204,7 @@ export const evalEnergyOn = (state: State) => {
   };
 };
 
-export const step = (state: State, steps: number) => {
+export const step = async (state: State, steps: number) => {
   const f = evalEnergyOn(state);
   const fgrad = gradF(f);
   const xs = state.varyingValues.map(differentiable);
@@ -189,13 +212,15 @@ export const step = (state: State, steps: number) => {
   // NOTE: minimize will mutates xs
   const { energy } = minimize(f, fgrad, xs, steps);
   // insert the resulting variables back into the translation for rendering
-  const varyingValues = xs.map((x) => scalarValue(x as Scalar));
+  const varyingValues = await Promise.all(
+    xs.map(async (x) => await scalarValue(x as Scalar))
+  );
   const trans = insertVaryings(
     state.translation,
     zip(state.varyingPaths, varyingValues) as [Path, number][]
   );
   const newState = { ...state, translation: trans, varyingValues };
-  if (scalarValue(energy) > 10) {
+  if ((await scalarValue(energy)) > 10) {
     // const newState = { ...state, varyingState: xs };
     newState.params.optStatus.tag = "UnconstrainedRunning";
     console.log(`Took ${steps} steps. Current energy`, scalarValue(energy));
@@ -219,7 +244,10 @@ export const step = (state: State, steps: number) => {
 // All TFjs related functions
 
 // TODO: types
-export const scalarValue = (x: Scalar): number => x.dataSync()[0];
+export const scalarValue = async (x: Scalar): Promise<number> => {
+  const [d] = await x.data();
+  return d;
+};
 export const tfsStr = (xs: any[]) => xs.map((e) => scalarValue(e));
 export const differentiable = (e: number): Variable => tf.scalar(e).variable();
 export const gradF = (fn: any) => tf.grads(fn);
@@ -260,7 +288,8 @@ export const minimize = (
     i++;
   }
   // find the current
-  const gradfx = gradf(xs);
-  const normGrad = tf.stack(gradfx).norm();
+  // const gradfx = gradf(xs);
+  // const normGrad = tf.stack(gradfx).norm();
+  const normGrad = scalar(0);
   return { energy: energy as Scalar, normGrad: normGrad as Scalar, i };
 };
