@@ -304,7 +304,7 @@ type Value<T> =
   | IFloatV<T>
   | IIntV<T>
   | IBoolV<T>
-  | IStrV<T>
+  | IStrV
   | IPtV<T>
   | IPathDataV<T>
   | IPtListV<T>
@@ -333,7 +333,7 @@ interface IBoolV<T> {
   contents: boolean;
 }
 
-interface IStrV<T> {
+interface IStrV {
   tag: "StrV";
   contents: string;
 }

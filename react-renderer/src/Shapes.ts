@@ -1,11 +1,35 @@
-// anchorPointType =
-//   ( "AnchorPoint"
-//   , M.fromList
-//         -- ("x", (FloatT, x_sampler)),
-//         -- ("y", (FloatT, y_sampler)),
-//       [ ("location", (PtT, pointSampler))
-//       , ("name", (StrT, constValue $ StrV "defaultAnchorPoint"))
-//       ])
+interface ShapeProps<T> {
+  // Example of computed properties
+  centerX: T;
+  centerY: T;
+  getBBox(): BBox<T>; // get the bounding box of the shape
+  getPolygon(): IPolygonV<T>; // get a bounding polygon of the shape
+  sample(): ShapeProps<T>; // sample the props of the shape
+}
+
+interface BBox<T> {
+  x: T;
+  y: T;
+  width: T;
+  height: T;
+}
+
+/**
+ * The definition for Circle GPI
+ *
+ * @interface ICircle
+ */
+interface ICircle<T> extends ShapeProps<T> {
+  x: IFloatV<T>;
+  y: IFloatV<T>;
+  r: IFloatV<T>;
+  strokeWidth: IFloatV<T>;
+  style: IStrV;
+  strokeStyle: IStrV;
+  strokeColor: IColorV<T>;
+  color: IColorV<T>;
+  name: IStrV;
+}
 
 // circType =
 //   ( "Circle"
