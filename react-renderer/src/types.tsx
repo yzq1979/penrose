@@ -1,9 +1,9 @@
-export interface IGPIProps {
-  shape: any;
+export interface IGPIProps<T = any> {
+  shape: T;
   canvasSize: [number, number];
 }
 
-export interface IGPIPropsDraggable extends IGPIProps {
+export interface IGPIPropsDraggable<T = any> extends IGPIProps<T> {
   ctm: DOMMatrix;
   onClick(e: React.MouseEvent<any>): void;
   dragEvent?(id: string, dy: number, dx: number): void;
@@ -19,4 +19,9 @@ export interface ILayerProps {
 export interface ILayer {
   layer: string;
   enabled: boolean;
+}
+
+export interface ICanvasSize {
+  width: number;
+  height: number;
 }

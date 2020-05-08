@@ -3,7 +3,7 @@ import * as ReactDOM from "react-dom";
 import { interactiveMap, staticMap } from "./componentMap";
 import Log from "./Log";
 import { loadImages } from "./Util";
-import { ILayer, ILayerProps } from "./types";
+import { ILayer, ILayerProps, ICanvasSize } from "./types";
 import { layerMap } from "./layers/layerMap";
 import { insertPending } from "./PropagateUpdate";
 import { collectLabels } from "./utills/CollectLabels";
@@ -23,10 +23,10 @@ interface ICanvasProps {
 }
 
 /**
- * Hard-coded canvas size
- * @type {[number, number]}
+ * Current size of the canvas
+ * TODO: make this change when the client window size changes
  */
-export const canvasSize: [number, number] = [800, 700];
+export const canvasSize: ICanvasSize = { width: 800, height: 700 };
 
 class Canvas extends React.Component<ICanvasProps> {
   public static sortShapes = (shapes: Shape[], ordering: string[]) => {

@@ -1,25 +1,18 @@
-interface ShapeProps<T> {
-  // Example of computed properties
-  centerX: T;
-  centerY: T;
-  getBBox(): BBox<T>; // get the bounding box of the shape
-  getPolygon(): IPolygonV<T>; // get a bounding polygon of the shape
-  sample(): ShapeProps<T>; // sample the props of the shape
-}
+import { Tensor, Rank } from "@tensorflow/tfjs";
+import { ICanvasSize } from "./types";
+import { canvasSize } from "./Canvas";
+import { randFloat } from "./Util";
+import Polygon from "./Polygon";
 
-interface BBox<T> {
-  x: T;
-  y: T;
-  width: T;
-  height: T;
-}
+// Properties should be polymorphic over the type of numbers because we want to (1) optimize with Tensors and (2) render with floats
 
 /**
- * The definition for Circle GPI
+ * Base properties of a `Circle` GPI.
  *
- * @interface ICircle
+ * @interface ICircleProps
+ * @template T type of floating point number. Defaults to `number`.
  */
-interface ICircle<T> extends ShapeProps<T> {
+interface ICircleProps<T = number> {
   x: IFloatV<T>;
   y: IFloatV<T>;
   r: IFloatV<T>;
@@ -31,19 +24,160 @@ interface ICircle<T> extends ShapeProps<T> {
   name: IStrV;
 }
 
-// circType =
-//   ( "Circle"
-//   , M.fromList
-//       [ ("x", (FloatT, x_sampler))
-//       , ("y", (FloatT, y_sampler))
-//       , ("r", (FloatT, width_sampler))
-//       , ("strokeWidth", (FloatT, stroke_sampler))
-//       , ("style", (StrT, constValue $ StrV "filled"))
-//       , ("strokeStyle", (StrT, constValue $ StrV "solid"))
-//       , ("strokeColor", (ColorT, sampleColor))
-//       , ("color", (ColorT, sampleColor))
-//       , ("name", (StrT, constValue $ StrV "defaultCircle"))
-//       ])
+interface ITextProps<T = number> {
+  x: IFloatV<T>;
+  y: IFloatV<T>;
+  w: IFloatV<T>;
+  h: IFloatV<T>;
+  fontSize: IStrV;
+  polygon: IPolygonV<T>;
+  string: IStrV;
+  rotation: IFloatV<T>;
+  style: IStrV;
+  stroke: IStrV;
+  color: IColorV<T>;
+  name: IStrV;
+}
+
+/**
+ * This interface inclides the base properties that are shared accross all shapes
+ *
+ * @interface IBaseProps
+ * @template S type of properties of a specific shape
+ */
+interface IBaseProps<S> {
+  // Common properties
+  shapeType: string; // unique identifier for this type of shape
+  // Common queries
+  sampleProperties(canvasSize: ICanvasSize): S; // get a newly sampled set of properties
+}
+
+/**
+ * The common queries to all shapes (e.g. finding the bounding box)
+ *
+ * @interface IBaseQueries
+ * @template T the type of floating point numbers
+ */
+interface IBaseQueries<T = Tensor> {
+  center(): [T, T]; // get the center of the shape
+  getBBox(): IBBox<T>; // get the bounding box of the shape
+}
+
+interface IBBox<T> {
+  x: T;
+  y: T;
+  width: T;
+  height: T;
+}
+
+class Circle implements IBaseProps<ICircleProps>, IBaseQueries<Tensor> {
+  public readonly shapeType: string = "Circle";
+  constructor(public props: ICircleProps) {}
+  sampleProperties(canvasSize: ICanvasSize): ICircleProps<number> {
+    return {
+      x: sampleX(canvasSize),
+      y: sampleY(canvasSize),
+      r: sampleWidth(canvasSize),
+      strokeWidth: sampleStroke(),
+      strokeStyle: strV("solid"),
+      strokeColor: sampleColor(),
+      color: sampleColor(),
+      style: strV("filled"),
+      name: strV("defaultCircle"),
+    };
+  }
+  center(): [Tensor, Tensor] {
+    throw new Error("Method not implemented.");
+  }
+  getBBox(): IBBox<Tensor> {
+    throw new Error("Method not implemented.");
+  }
+}
+
+class Text implements IBaseProps<ITextProps>, IBaseQueries<Tensor> {
+  shapeType: string;
+  sampleProperties(canvasSize: ICanvasSize): ITextProps<number> {
+    return {
+      x: sampleX(canvasSize),
+      y: sampleY(canvasSize),
+      w: floatV(0), // NOTE: updated by front-end
+      h: floatV(0), // NOTE: updated by front-end
+      fontSize: strV("12pt"),
+      polygon: emptyPoly,
+      string: strV("defaultLabelText"),
+      rotation: floatV(0.0),
+      style: strV("none"),
+      stroke: strV("none"),
+      color: makeRGBA(0, 0, 0, 1),
+      name: strV("defaultCircle"),
+    };
+  }
+  center(): [Tensor<Rank>, Tensor<Rank>] {
+    throw new Error("Method not implemented.");
+  }
+  getBBox(): IBBox<Tensor<Rank>> {
+    throw new Error("Method not implemented.");
+  }
+}
+
+interface ILineLike<T> {
+  endPoints(): [T, T];
+}
+
+interface IPolygonizable<T> {
+  getPolygon(): IPolygonV<T>; // get a bounding polygon of the shape
+}
+
+const sampleX = (canvas: ICanvasSize): IFloatV<number> =>
+  floatV(randFloat(-canvas.width / 2, -canvas.width / 2));
+const sampleY = (canvas: ICanvasSize): IFloatV<number> =>
+  floatV(randFloat(-canvas.height / 2, -canvas.height / 2));
+const sampleWidth = (canvas: ICanvasSize): IFloatV<number> =>
+  floatV(randFloat(3, canvas.width / 6));
+const sampleHeight = (canvas: ICanvasSize): IFloatV<number> =>
+  floatV(randFloat(3, canvas.height / 6));
+const sampleStroke = (): IFloatV<number> => floatV(randFloat(0.5, 3));
+const sampleColor = (): IColorV<number> => {
+  const [min, max] = [0.1, 0.9];
+  // NOTE: a random number doesn't have a random opacity
+  return makeRGBA(
+    randFloat(min, max),
+    randFloat(min, max),
+    randFloat(min, max),
+    0.5
+  );
+};
+
+const makeRGBA = (
+  r: number,
+  g: number,
+  b: number,
+  a: number
+): IColorV<number> => ({
+  tag: "ColorV",
+  contents: {
+    tag: "RGBA",
+    contents: [r, g, b, a],
+  },
+});
+
+const emptyPoly: IPolygonV<number> = {
+  tag: "PolygonV",
+  contents: [
+    [],
+    [],
+    [
+      [NaN, NaN],
+      [-NaN, -NaN],
+    ],
+    [],
+  ],
+};
+const floatV = (num: number): IFloatV<number> => ({
+  tag: "FloatV",
+  contents: num,
+});
+const strV = (s: string): IStrV => ({ tag: "StrV", contents: s });
 
 // ellipseType =
 //   ( "Ellipse"
