@@ -1,9 +1,9 @@
 import * as React from "react";
 import { toScreen, toHex, Arrowhead, Shadow } from "./Util";
 import { flatten } from "lodash";
-import { IGPIProps } from "./types";
+import { IGPIProps, ICanvasSize } from "./types";
 
-const toCmdString = (cmd: any, canvasSize: [number, number]) => {
+const toCmdString = (cmd: any, canvasSize: ICanvasSize) => {
   switch (cmd.tag) {
     case "Pt":
       return "L" + toScreen(cmd.contents, canvasSize).join(" ");
@@ -23,7 +23,7 @@ const toCmdString = (cmd: any, canvasSize: [number, number]) => {
 const pathCommandString = (
   command: string,
   pts: number[][],
-  canvasSize: [number, number]
+  canvasSize: ICanvasSize
 ) =>
   command +
   flatten(
@@ -32,7 +32,7 @@ const pathCommandString = (
     })
   ).join(" ");
 
-const fstCmdString = (pathCmd: any, canvasSize: [number, number]) => {
+const fstCmdString = (pathCmd: any, canvasSize: ICanvasSize) => {
   if (pathCmd.tag === "Pt") {
     return "M" + toScreen(pathCmd.contents, canvasSize).join(" ");
   } else {
@@ -40,7 +40,7 @@ const fstCmdString = (pathCmd: any, canvasSize: [number, number]) => {
   }
 };
 
-const toSubPathString = (commands: any[], canvasSize: [number, number]) => {
+const toSubPathString = (commands: any[], canvasSize: ICanvasSize) => {
   // TODO: deal with an empty list more gracefully. This next line will crash with undefined head command if empty.
   if (!commands || !commands.length) {
     console.error("WARNING: empty path");
@@ -54,7 +54,7 @@ const toSubPathString = (commands: any[], canvasSize: [number, number]) => {
   );
 };
 
-const toPathString = (pathData: any[], canvasSize: [number, number]) =>
+const toPathString = (pathData: any[], canvasSize: ICanvasSize) =>
   pathData
     .map((subPath: any) => {
       const { tag, contents } = subPath;

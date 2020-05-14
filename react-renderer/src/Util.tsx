@@ -1,6 +1,7 @@
 import * as React from "react";
 
 import memoize from "fast-memoize";
+import { ICanvasSize } from "./types";
 
 /**
  * Generate a random float. The maximum is exclusive and the minimum is inclusive
@@ -90,16 +91,13 @@ export const Arrowhead = (props: {
   );
 };
 
-export const toScreen = (
-  [x, y]: [number, number],
-  canvasSize: [number, number]
-) => {
-  const [width, height] = canvasSize;
+export const toScreen = ([x, y]: [number, number], canvasSize: ICanvasSize) => {
+  const { width, height } = canvasSize;
   return [width / 2 + x, height / 2 - y];
 };
 
-export const penroseToSVG = (canvasSize: [number, number]) => {
-  const [width, height] = canvasSize;
+export const penroseToSVG = (canvasSize: ICanvasSize) => {
+  const { width, height } = canvasSize;
   const flipYStr = "matrix(1 0 0 -1 0 0)";
   const translateStr = "translate(" + width / 2 + ", " + height / 2 + ")";
   // Flip Y direction, then translate shape to origin mid-canvas
@@ -119,7 +117,7 @@ export const penroseTransformStr = (tf: any) => {
   return penroseTransform;
 };
 
-export const svgTransformString = (tf: any, canvasSize: [number, number]) => {
+export const svgTransformString = (tf: any, canvasSize: ICanvasSize) => {
   // https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/transform
   // `tf` is `shape.transformation.contents`, an HMatrix from the backend
   // It is the *full* transform, incl. default transform
@@ -133,7 +131,7 @@ export const svgTransformString = (tf: any, canvasSize: [number, number]) => {
 // BUG: ptList needs to be properly typed
 export const toPointListString = memoize(
   // Why memoize?
-  (ptList: any[], canvasSize: [number, number]) =>
+  (ptList: any[], canvasSize: ICanvasSize) =>
     ptList
       .map((coords: [number, number]) => {
         const pt = coords;

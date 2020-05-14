@@ -1,16 +1,15 @@
 import * as React from "react";
 import { toScreen, toPointListString, penroseToSVG } from "../Util";
 import memoize from "fast-memoize";
-import { ILayerProps } from "../types";
+import { ILayerProps, ICanvasSize } from "../types";
 
-const toPointListStringOld = memoize(
-  (ptList: any[], canvasSize: [number, number]) =>
-    ptList
-      .map((coords: [number, number]) => {
-        const pt = toScreen(coords, canvasSize);
-        return pt[0].toString() + " " + pt[1].toString();
-      })
-      .join(" ")
+const toPointListStringOld = memoize((ptList: any[], canvasSize: ICanvasSize) =>
+  ptList
+    .map((coords: [number, number]) => {
+      const pt = toScreen(coords, canvasSize);
+      return pt[0].toString() + " " + pt[1].toString();
+    })
+    .join(" ")
 );
 
 class PolygonLayer extends React.Component<ILayerProps> {

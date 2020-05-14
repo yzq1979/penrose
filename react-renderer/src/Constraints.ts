@@ -8,7 +8,8 @@ export const objDict = {
 };
 export const constrDict = {
   maxSize: ([shapeType, props]: [string, any]) => {
-    const limit = scalar(Math.max(...canvasSize) / 6);
+    const { height, width } = canvasSize;
+    const limit = scalar(Math.max(height, width) / 6);
     switch (shapeType) {
       case "Circle":
         return stack([props.r.contents, limit.neg()]).sum();

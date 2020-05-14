@@ -160,7 +160,7 @@ const compDict = {
   },
 };
 
-const arrowPts = ({ startX, startY, endX, endY }: Properties) =>
+const arrowPts = ({ startX, startY, endX, endY }: Properties<number>) =>
   [
     [startX.contents, startY.contents],
     [endX.contents, endY.contents],

@@ -1,6 +1,6 @@
 export interface IGPIProps<T = any> {
   shape: T;
-  canvasSize: [number, number];
+  canvasSize: ICanvasSize;
 }
 
 export interface IGPIPropsDraggable<T = any> extends IGPIProps<T> {
@@ -13,7 +13,7 @@ export interface ILayerProps {
   shapes: Shape[];
   debugData: any[];
   ctm: DOMMatrix;
-  canvasSize: [number, number];
+  canvasSize: ICanvasSize;
 }
 
 export interface ILayer {

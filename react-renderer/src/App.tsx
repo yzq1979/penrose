@@ -1,6 +1,6 @@
 import * as React from "react";
 import Log from "./Log";
-import Canvas from "./Canvas";
+import Canvas, { canvasSize } from "./Canvas";
 import ButtonBar from "./ButtonBar";
 import { ILayer } from "./types";
 import { Step, Resample, converged, initial } from "./packets";
@@ -9,6 +9,7 @@ import { evalTranslation, decodeState } from "./Evaluator";
 import { step, stepEP } from "./Optimizer";
 import { unwatchFile } from "fs";
 import { collectLabels } from "./utills/CollectLabels";
+import { sampleShape } from "./Shapes";
 
 interface ICanvasState {
   data: State | undefined; // NOTE: if the backend is not connected, data will be undefined, TODO: rename this field
@@ -24,6 +25,12 @@ const stepState = async (state: State, onUpdate: any) => {
   // onUpdate(newState);
   const labeledShapes: any = await collectLabels(newState.shapes);
   onUpdate({ ...newState, shapes: labeledShapes }); // callback for React state update
+};
+
+const resampleState = (state: State, numSamples: number) => {
+  const { shapes } = state;
+  const resampledShapes = shapes.map((s) => sampleShape(s, canvasSize));
+  return { ...state, shapes: resampledShapes };
 };
 
 class App extends React.Component<any, ICanvasState> {
@@ -82,8 +89,9 @@ class App extends React.Component<any, ICanvasState> {
 
   public resample = async () => {
     const NUM_SAMPLES = 50;
-    await this.setState({ processedInitial: false });
-    this.protocol.sendPacket(Resample(NUM_SAMPLES, this.state.data));
+    // this.protocol.sendPacket(Resample(NUM_SAMPLES, this.state.data));
+    const resampledState = resampleState(this.state.data!, NUM_SAMPLES);
+    await this.setState({ processedInitial: true, data: resampledState });
   };
   public toggleLayer = (layerName: string) => {
     this.setState({

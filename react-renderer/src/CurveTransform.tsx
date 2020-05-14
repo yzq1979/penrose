@@ -1,9 +1,9 @@
 import * as React from "react";
 import { svgTransformString, toHex, Arrowhead } from "./Util";
 import { flatten } from "lodash";
-import { IGPIProps } from "./types";
+import { IGPIProps, ICanvasSize } from "./types";
 
-const toCmdString = (cmd: any, canvasSize: [number, number]) => {
+const toCmdString = (cmd: any, canvasSize: ICanvasSize) => {
   switch (cmd.tag) {
     case "Pt":
       return "L" + cmd.contents.join(" ");
@@ -23,7 +23,7 @@ const toCmdString = (cmd: any, canvasSize: [number, number]) => {
 const pathCommandString = (
   command: string,
   pts: number[][],
-  canvasSize: [number, number]
+  canvasSize: ICanvasSize
 ) =>
   command +
   flatten(
@@ -32,7 +32,7 @@ const pathCommandString = (
     })
   ).join(" ");
 
-const fstCmdString = (pathCmd: any, canvasSize: [number, number]) => {
+const fstCmdString = (pathCmd: any, canvasSize: ICanvasSize) => {
   if (pathCmd.tag === "Pt") {
     return "M" + pathCmd.contents.join(" ");
   } else {
@@ -40,7 +40,7 @@ const fstCmdString = (pathCmd: any, canvasSize: [number, number]) => {
   }
 };
 
-const toSubPathString = (commands: any[], canvasSize: [number, number]) => {
+const toSubPathString = (commands: any[], canvasSize: ICanvasSize) => {
   const [headCommand, ...tailCommands] = commands;
   return (
     fstCmdString(headCommand, canvasSize) +
@@ -48,7 +48,7 @@ const toSubPathString = (commands: any[], canvasSize: [number, number]) => {
   );
 };
 
-const toPathString = (pathData: any[], canvasSize: [number, number]) =>
+const toPathString = (pathData: any[], canvasSize: ICanvasSize) =>
   pathData
     .map((subPath: any) => {
       const { tag, contents } = subPath;

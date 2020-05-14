@@ -104,7 +104,8 @@ export const stepEP = (state: State, steps: number, evaluate = true) => {
       // (TODO. `varyingValues` is updated `state` after each step by putting it into `newState` and passing it to `evalTranslation`, which returns another state)
 
       // TODO. these below are both doing the equivalent of returning `vstate'`
-      if (!epConverged(normGrad)) { // UO didn't converge; keep running UO
+      if (!epConverged(normGrad)) {
+        // UO didn't converge; keep running UO
         newState.params.optStatus = {
           tag: "UnconstrainedRunning",
           contents: xs,
@@ -126,7 +127,7 @@ export const stepEP = (state: State, steps: number, evaluate = true) => {
       // NOTE: minimize will mutate xs
       const { energy, normGrad } = minimize(f, fgrad, xs, steps);
 
-      // TODO. Do EP convergence check on the last EP state (and its energy), and last UO state (xs) (and its energy) 
+      // TODO. Do EP convergence check on the last EP state (and its energy), and last UO state (xs) (and its energy)
       // TODO. Make a diagram to clarify vocabulary
       if (epConverged(normGrad)) {
         newState.params.optStatus.tag = "EPConverged";
@@ -168,6 +169,7 @@ export const evalEnergyOn = (state: State) => {
   // NOTE: this will greatly improve the performance of the optmizer
   // TODO: move this decl to somewhere else
   tf.setBackend("cpu");
+  tf.enableProdMode();
   const { objFns, constrFns, translation, varyingPaths } = state;
   // TODO: types
   return (...varyingValuesTF: Variable[]): Scalar => {

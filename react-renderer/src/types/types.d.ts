@@ -51,30 +51,37 @@ interface IState {
 }
 type State = IState; // TODO
 
+// TODO: use `CompNode` in the system for evaluation optimization
 // TODO: annotate the comp graph with their derivatives
 // NOTE: the point is to have a better type that allows annotation of the comp graph
-// interface FieldExpr<T> {
-//   tag: "FGPI" | "FExpr";
-//   done: boolean;
-//   value: ?;
-//   contents: [string, { [k: string]: TagExpr<T> }] | TagExpr<T>;
-// }
-// TagExpr is either Value or Expr
 interface CompNode<T> {
   status: "Done" | "Uninitialized" | "Pending";
   def: Expr | GPIExpr<T>;
   value: Value<T> | undefined;
 }
 
-type Properties = { [k: string]: Value<number> };
+type Properties<T> = { [k: string]: Value<T> };
 
 ////////////////////////////////////////////////////////////////////////////
 
 type Shape = IShape;
+// TODO: shape types should be extensible by the end-user, so a string should be used once we figure out the extension mechanism
+// type ShapeType = string;
+// NOTE: this sum type is just for exhausiveness checking.
+type ShapeType =
+  | "Circle"
+  | "Text"
+  | "Arrow"
+  | "Rectangle"
+  | "Square"
+  | "Curve"
+  | "Image"
+  | "Ellipse"
+  | "Line";
 
-interface IShape {
-  shapeType: string;
-  properties: Properties;
+interface IShape<T> {
+  shapeType: ShapeType;
+  properties: Properties<T>;
 }
 
 type ArgVal<T> = IGPI<T> | IVal<T>;
