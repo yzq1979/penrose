@@ -13,6 +13,13 @@ export const objDict = {
     return distsq(center(s1), center(s2));
   },
 
+  // centerLabel: ([t1, arr]: [string, any], [t2, text1]: [string, any], w: number) => {
+  //   if (typesAre([t1,t2], ["Arrow", "Text"])) {
+  //     const mp = midpoint(point2Tensor(arr.startX.contents, arr.startY.contents), point2Tensor(arr.end.contents, arr.endY.contents));
+  //     return 
+  //   }
+  // },
+
   // Generic repel function for two GPIs with centers
   repel: ([t1, s1]: [string, any], [t2, s2]: [string, any]) => {
     // HACK: `repel` typically needs to have a weight multiplied since its magnitude is small
@@ -152,6 +159,11 @@ const centerArrow2 = (arr: any, center1: Tensor, center2: Tensor, [o1, o2]: Tens
 const sc = (x: any): number => x.dataSync()[0];
 const scs = (xs: any[]) => xs.map((e) => sc(e));
 
+// const point2Tensor = (x : number, y: number): Tensor => {
+//   return stack([x, y])
+// } 
+// // can be factored in but I didn't want to change anybody else's code
+
 export const zero: Tensor = scalar(0);
 
 // to prevent 1/0 (infinity). put it in the denominator
@@ -172,6 +184,10 @@ export const distsq = (p1: Tensor, p2: Tensor): Tensor => {
   const dp = p1.sub(p2);
   return dp.dot(dp);
 }
+
+// export const midpoint = (p1: Tensor, p2: Tensor): Tensor => {
+//   return p1.add(p2).div(scalar(2.0));
+// }
 
 // with epsilon to avoid NaNs
 export const normalize = (v: Tensor): Tensor => v.div(v.norm().add(epsd));
