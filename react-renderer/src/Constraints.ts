@@ -20,10 +20,12 @@ export const objDict = {
     // can this be made more efficient (code-wise) by calling "above" and swapping arguments?
 
   centerLabel: ([t1, arr]: [string, any], [t2, text1]: [string, any], w: number): Tensor => {
+    console.log(typeof(arr.startX.contents));
+    console.log(typeof(arr.startY.contents));
     if (typesAre([t1,t2], ["Arrow", "Text"])) {
       const mx = arr.startX.contents.add(arr.endX.contents).div(scalar(2.0));
       const my = arr.startY.contents.add(arr.endY.contents).div(scalar(2.0));
-      // entire equation is (mx - lx) ^ 2 + (my + 1.1 * text.h - ly) ^ 2 from Functions.hs - split it ino two halves below for readability
+      // entire equation is (mx - lx) ^ 2 + (my + 1.1 * text.h - ly) ^ 2 from Functions.hs - split it into two halves below for readability
       const lh = mx.sub(text1.x.contents).square();
       const rh = my.add(text1.h.contents.mul(scalar(1.1))).sub(text1.y.contents).square();
       return lh.add(rh).mul(scalar(w));
