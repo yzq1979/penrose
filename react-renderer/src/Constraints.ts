@@ -13,12 +13,22 @@ export const objDict = {
     return distsq(center(s1), center(s2));
   },
 
-  // centerLabel: ([t1, arr]: [string, any], [t2, text1]: [string, any], w: number) => {
-  //   if (typesAre([t1,t2], ["Arrow", "Text"])) {
-  //     const mp = midpoint(point2Tensor(arr.startX.contents, arr.startY.contents), point2Tensor(arr.end.contents, arr.endY.contents));
-  //     return 
-  //   }
-  // },
+  // stella
+
+  below: ([t1, bottom]: [string, any], [t2, top]: [string, any], offset = 100) => 
+    square(top.y.contents.sub(bottom.y.contents).sub(scalar(offset))),
+    // can this be made more efficient (code-wise) by calling "above" and swapping arguments?
+
+  centerLabel: ([t1, arr]: [string, any], [t2, text1]: [string, any], w: number): Tensor => {
+    if (typesAre([t1,t2], ["Arrow", "Text"])) {
+      const mx = arr.startX.contents.add(arr.endX.contents).div(scalar(2.0));
+      const my = arr.startY.contents.add(arr.endY.contents).div(scalar(2.0));
+      // entire equation is (mx - lx) ^ 2 + (my + 1.1 * text.h - ly) ^ 2 from Functions.hs - split it ino two halves below for readability
+      const lh = mx.sub(text1.x.contents).square();
+      const rh = my.add(text1.h.contents.mul(scalar(1.1))).sub(text1.y.contents).square();
+      return lh.add(rh).mul(scalar(w));
+    } else throw new Error(`${[t1, t2]} not supported for centerLabel`)
+  },
 
   // Generic repel function for two GPIs with centers
   repel: ([t1, s1]: [string, any], [t2, s2]: [string, any]) => {
