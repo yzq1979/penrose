@@ -43,9 +43,9 @@ with Set X; Set Y; Set R1; Set R2 {
   f.padding = 20.0
 
     f.shape = Arrow {
-      startX : R1.shape.x + (R1.shape.side) / 2.0 + f.padding
+      startX : (R1.shape.side) / 2.0 -- R1.shape.x + (R1.shape.side) / 2.0 + f.padding
       startY : R1.shape.y
-      endX : R2.shape.x - (R2.shape.side) / 2.0 - f.padding
+      endX : (R2.shape.side) -- R2.shape.x - (R2.shape.side) / 2.0 - f.padding
       endY : R2.shape.y
       thickness : 2.0
       color : Colors.black

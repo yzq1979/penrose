@@ -20,15 +20,18 @@ export const objDict = {
     // can this be made more efficient (code-wise) by calling "above" and swapping arguments?
 
   centerLabel: ([t1, arr]: [string, any], [t2, text1]: [string, any], w: number): Tensor => {
+
+      console.log("t1, arr, w", t1, arr, w);
     console.log(typeof(arr.startX.contents));
     console.log(typeof(arr.startY.contents));
+
     if (typesAre([t1,t2], ["Arrow", "Text"])) {
       const mx = arr.startX.contents.add(arr.endX.contents).div(scalar(2.0));
       const my = arr.startY.contents.add(arr.endY.contents).div(scalar(2.0));
       // entire equation is (mx - lx) ^ 2 + (my + 1.1 * text.h - ly) ^ 2 from Functions.hs - split it into two halves below for readability
       const lh = mx.sub(text1.x.contents).square();
       const rh = my.add(text1.h.contents.mul(scalar(1.1))).sub(text1.y.contents).square();
-      return lh.add(rh).mul(scalar(w));
+      return lh.add(rh).mul(w);
     } else throw new Error(`${[t1, t2]} not supported for centerLabel`)
   },
 
@@ -94,7 +97,7 @@ export const constrDict = {
       const d = dist(center(s1), center(s2));
       const textR = maximum(s2.w.contents, s2.h.contents);
       return d.sub(s1.r.contents).add(textR);
-    } else throw new Error(`${[t1, t2]} not supported for contains`);
+    } else return scalar(0.0); // throw new Error(`${[t1, t2]} not supported for contains`); // TODO revert
   },
 
   disjoint: ([t1, s1]: [string, any], [t2, s2]: [string, any]) => {
@@ -121,7 +124,7 @@ export const constrDict = {
       const d = dist(center(s1), center(s2));
       return s2.r.contents
         .add(textR)
-        .add(scalar(padding))
+        .add(padding)
         .sub(d);
     } else throw new Error(`${[t1, t2]} not supported for outsideOf`);
   },

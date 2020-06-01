@@ -280,9 +280,12 @@ export const evalExpr = (
         // HACK: coerce the type for now to let the compiler finish
         contents: evalBinOp(
           binOp,
-          val1.contents as Value<number>,
-          val2.contents as Value<number>
+          val1.contents as Value<number | Tensor>,
+          val2.contents as Value<number | Tensor>
         ),
+        // val1.contents as Value<number>,
+        // val2.contents as Value<number>
+
       };
     case "EPath":
       return resolvePath(e.contents, trans, varyingVars, autodiff);
@@ -300,8 +303,8 @@ export const evalExpr = (
   }
 };
 
-const differentiableValue = (v: Value<number>): Value<Tensor> => {
-  if (v.tag === "FloatV" || v.tag === "IntV") {
+const differentiableValue = (v: Value<number | Tensor>): Value<Tensor> => {
+  if ((v.tag === "FloatV" || v.tag === "IntV") && typeof v.contents === "number") {
     return { ...v, contents: differentiable(v.contents) } as
       | IFloatV<Tensor>
       | IIntV<Tensor>;
@@ -392,32 +395,63 @@ export const argValue = (e: ArgVal<number | Tensor>) => {
  */
 export const evalBinOp = (
   op: BinaryOp,
-  v1: Value<number>,
-  v2: Value<number>
-): Value<number> => {
-  let returnType: "FloatV" | "IntV";
-  // NOTE: need to explicitly check the types so the compiler will understand
-  if (v1.tag === "FloatV" && v2.tag === "FloatV") returnType = "FloatV";
-  else if (v1.tag === "IntV" && v2.tag === "IntV") returnType = "IntV";
-  else throw new Error(`the types of two operands to ${op} must match`);
+  v1: Value<number | Tensor>,
+  v2: Value<number | Tensor>
+): Value<number | Tensor> => {
 
-  switch (op) {
-    case "BPlus":
-      return { tag: returnType, contents: v1.contents + v2.contents };
-    case "BMinus":
-      return { tag: returnType, contents: v1.contents - v2.contents };
-    case "Multiply":
-      return { tag: returnType, contents: v1.contents * v2.contents };
-    case "Divide":
-      if (v2.contents === 0) throw new Error("divided by zero");
-      const res = v1.contents / v2.contents;
-      return {
-        tag: returnType,
-        contents: returnType === "IntV" ? Math.floor(res) : res,
-      };
-    case "Exp":
-      return { tag: returnType, contents: Math.pow(v1.contents, v2.contents) };
+  let returnType: "FloatV" | "IntV";
+
+  if (typeof v1.contents === "number" && !(typeof v2.contents === "number")) {
+    return evalBinOp(op, differentiableValue(v1), v2);
+  } else if (!(typeof v1.contents === "number") && typeof v2.contents === "number") {
+    return evalBinOp(op, v1, differentiableValue(v2));
   }
+
+  // TODO: Use tensor operations here and in evalUOp
+  // TODO: Make this a LOT neater by making everything a tensor straight-up
+  let res;
+
+  // NOTE: need to explicitly check the types so the compiler will understand
+  if (v1.tag === "FloatV" && v2.tag === "FloatV") {
+    returnType = "FloatV";
+
+    switch (op) {
+      // case "BPlus":
+      //   return { tag: returnType, contents: v1.contents + v2.contents };
+      // case "BMinus":
+      //   return { tag: returnType, contents: v1.contents - v2.contents };
+      // case "Multiply":
+      //   return { tag: returnType, contents: v1.contents * v2.contents };
+      case "Divide":
+        if (typeof v1.contents === "number" && typeof v2.contents === "number") {
+          if (v2.contents === 0) throw new Error("divided by zero");
+          res = v1.contents / v2.contents;
+          // res = returnType === "IntV" ? Math.floor(res) : res;
+        } else if (!(typeof v1.contents === "number") && !(typeof v2.contents === "number")) {
+          // two tensors
+          res = v1.contents.div(v2.contents);
+          console.log("evalBinOp res", v1.contents.dataSync(), v2.contents.dataSync(), res.dataSync());
+        } else {
+          throw Error("operand types don't match");
+        }
+
+        return {
+          tag: returnType,
+          contents: res
+        };
+      // case "Exp":
+      //   return { tag: returnType, contents: Math.pow(v1.contents, v2.contents) };
+    }
+
+  }
+  else if (v1.tag === "IntV" && v2.tag === "IntV") {
+    returnType = "IntV";
+  }
+  else {
+    throw new Error(`the types of two operands to ${op} must match`);
+  }
+
+  return v1; // TODO hack
 };
 
 /**
