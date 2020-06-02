@@ -1,0 +1,34 @@
+forall Box b {
+    b.shape = Rectangle {
+        strokeWidth : 0
+    }
+    b.text = Text {
+        string : b.label
+    }
+
+    ensure contains(b.shape, b.text)
+    ensure minSize(b.shape)
+    ensure maxSize(b.shape)
+    encourage sameCenter(b.text, b.shape)
+}
+
+-- is rect x y from bottom left?
+
+Arr a
+where To(X, Y, a) {
+    a.padding = 20.0
+    a.shape = Arrow{
+        startX : X.shape.x + (X.shape.w) / 2.0 + a.padding
+        startY : X.shape.y
+        endX : Y.shape.x - (Y.shape.w) / 2.0 - a.padding
+        endY : Y.shape.y
+        thickness : 2.0
+        color : Colors.black
+    }
+    a.text = Text {
+      string : a.label
+      rotation : 0.0
+    }
+
+    a.labelFn  = encourage centerLabel(a.shape, a.text, 5.0)
+}
