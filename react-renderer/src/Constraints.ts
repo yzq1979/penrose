@@ -21,6 +21,22 @@ export const objDict = {
 
   centerLabel: ([t1, arr]: [string, any], [t2, text1]: [string, any], w: number): Tensor => {
     if (typesAre([t1,t2], ["Arrow", "Text"])) {
+  // Stella function for testing (TODO: Replace w/ most recent version)
+  // centerLabel: ([t1, arr]: [string, any], [t2, text1]: [string, any], w: number): Tensor => {
+
+  //   // For debugging, TODO remove
+  //   console.log("t1, arr, w", t1, arr, w);
+  //   console.log(typeof (arr.startX.contents));
+  //   console.log(typeof (arr.startY.contents));
+  //   console.log(typeof (arr.endX.contents));
+  //   console.log(typeof (arr.endY.contents));
+  //   console.log(arr.startX.contents.dataSync()[0]);
+  //   console.log(arr.startY.contents.dataSync()[0]);
+  //   console.log(arr.endX.contents.dataSync()[0]);
+  //   console.log(arr.endY.contents.dataSync()[0]);
+  //   // The tensors seem to have different disposed values, but their numeric values all seem to be available, so this is fine?
+
+  //   if (typesAre([t1, t2], ["Arrow", "Text"])) {
       const mx = arr.startX.contents.add(arr.endX.contents).div(scalar(2.0));
       const my = arr.startY.contents.add(arr.endY.contents).div(scalar(2.0));
       // entire equation is (mx - lx) ^ 2 + (my + 1.1 * text.h - ly) ^ 2 from Functions.hs - split it into two halves below for readability
@@ -101,7 +117,13 @@ export const constrDict = {
       const sq = stack([s1.x.contents, s1.y.contents]);
       const d = dist(sq, center(s2));
       return d.sub(scalar(0.5).mul(s1.side.contents).sub(s2.r.contents));
-    } else throw new Error(`${[t1, t2]} not supported for contains`);
+    } else {
+      console.error(`${[t1, t2]} not supported for contains`);
+      return scalar(0.0);
+
+      // TODO revert
+      // throw new Error(`${[t1, t2]} not supported for contains`);
+    }
   },
 
   disjoint: ([t1, s1]: [string, any], [t2, s2]: [string, any]) => {
