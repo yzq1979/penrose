@@ -1,7 +1,0 @@
-Box A, B, C
-Arr D, E
-
-To(A, B, D)
-To(B, C, E)
-
-Autolabel All
