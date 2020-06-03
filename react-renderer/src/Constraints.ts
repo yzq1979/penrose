@@ -13,30 +13,14 @@ export const objDict = {
     return distsq(center(s1), center(s2));
   },
 
-  // stella
 
   below: ([t1, bottom]: [string, any], [t2, top]: [string, any], offset = 100) => 
     square(top.y.contents.sub(bottom.y.contents).sub(scalar(offset))),
-    // can this be made more efficient (code-wise) by calling "above" and swapping arguments?
+    // can this be made more efficient (code-wise) by calling "above" and swapping arguments? - stella
+
 
   centerLabel: ([t1, arr]: [string, any], [t2, text1]: [string, any], w: number): Tensor => {
     if (typesAre([t1,t2], ["Arrow", "Text"])) {
-  // Stella function for testing (TODO: Replace w/ most recent version)
-  // centerLabel: ([t1, arr]: [string, any], [t2, text1]: [string, any], w: number): Tensor => {
-
-  //   // For debugging, TODO remove
-  //   console.log("t1, arr, w", t1, arr, w);
-  //   console.log(typeof (arr.startX.contents));
-  //   console.log(typeof (arr.startY.contents));
-  //   console.log(typeof (arr.endX.contents));
-  //   console.log(typeof (arr.endY.contents));
-  //   console.log(arr.startX.contents.dataSync()[0]);
-  //   console.log(arr.startY.contents.dataSync()[0]);
-  //   console.log(arr.endX.contents.dataSync()[0]);
-  //   console.log(arr.endY.contents.dataSync()[0]);
-  //   // The tensors seem to have different disposed values, but their numeric values all seem to be available, so this is fine?
-
-  //   if (typesAre([t1, t2], ["Arrow", "Text"])) {
       const mx = arr.startX.contents.add(arr.endX.contents).div(scalar(2.0));
       const my = arr.startY.contents.add(arr.endY.contents).div(scalar(2.0));
       // entire equation is (mx - lx) ^ 2 + (my + 1.1 * text.h - ly) ^ 2 from Functions.hs - split it into two halves below for readability
@@ -200,11 +184,6 @@ const centerArrow2 = (arr: any, center1: Tensor, center2: Tensor, [o1, o2]: Tens
 const sc = (x: any): number => x.dataSync()[0];
 const scs = (xs: any[]) => xs.map((e) => sc(e));
 
-// const point2Tensor = (x : number, y: number): Tensor => {
-//   return stack([x, y])
-// } 
-// // can be factored in but I didn't want to change anybody else's code
-
 export const zero: Tensor = scalar(0);
 
 // to prevent 1/0 (infinity). put it in the denominator
@@ -226,9 +205,6 @@ export const distsq = (p1: Tensor, p2: Tensor): Tensor => {
   return dp.dot(dp);
 }
 
-// export const midpoint = (p1: Tensor, p2: Tensor): Tensor => {
-//   return p1.add(p2).div(scalar(2.0));
-// }
 
 // with epsilon to avoid NaNs
 export const normalize = (v: Tensor): Tensor => v.div(v.norm().add(epsd));
